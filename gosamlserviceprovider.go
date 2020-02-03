@@ -27,17 +27,20 @@ type SamlServiceProviderConfig struct {
 
 //	TrustCertFiles          []string
 
-	ServiceProviderKeystore	*tls.Certificate
+	ServiceProviderKeystore		*tls.Certificate
 
-	AudienceRestriction	string
+	EntityId			string
 
-	SignAuthnRequest	bool
+	AssertionConsumerServiceUrl	string
+	AudienceRestriction		string
 
-	IdpMetaDataFile		string
+	SignAuthnRequest		bool
 
-	SessionHeaderName	string
+	IdpMetaDataFile			string
 
-	Service                 securityprotocol.HttpHandler
+	SessionHeaderName		string
+
+	Service                 	securityprotocol.HttpHandler
 }
 
 type SamlServiceProvider struct {
@@ -53,13 +56,13 @@ type SamlServiceProvider struct {
 
 //	HoK			bool
 
-	samlServiceProvider	*saml2.SAMLServiceProvider
+	SamlServiceProvider	*saml2.SAMLServiceProvider
 //	ClientCertHandler	func(req *http.Request) *x509.Certificate
 }
 
 func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*SamlServiceProvider, error) {
 
-	samlServiceProvider, err := CreateSamlServiceProvider(config.IdpMetaDataFile, config.AudienceRestriction, config.SignAuthnRequest, "TODO", "TODO", config.ServiceProviderKeystore)
+	samlServiceProvider, err := CreateSamlServiceProvider(config.IdpMetaDataFile, config.AudienceRestriction, config.SignAuthnRequest, config.AssertionConsumerServiceUrl, config.EntityId, config.ServiceProviderKeystore)
 	if (err != nil) {
 		return nil, err
 	}
@@ -115,12 +118,13 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 		SPKeyStore:                  spKeyStore,
 	}
 
+	fmt.Println("INIT SP")
 	return sp, nil
 }
 
 func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, service securityprotocol.HttpHandler, sessionHeaderName string) *SamlServiceProvider{
 	s := new(SamlServiceProvider)
-	s.samlServiceProvider = samlServiceProvider
+	s.SamlServiceProvider = samlServiceProvider
 	s.sessionCache = sessionCache
 	s.Service = service
 	s.sessionHeaderName = sessionHeaderName
@@ -133,12 +137,13 @@ func (a SamlServiceProvider) Handle(w http.ResponseWriter, r *http.Request) (int
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
 
-
+	fmt.Println("handle1")
 	// Get the session id
 	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
 	if (err != nil) {
 		return http.StatusInternalServerError, err
 	}
+	fmt.Println("handle2")
 
 	// The request identifies a session, check that the session is valid and get it
 	if (sessionId != "") {
@@ -162,8 +167,20 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 
 	// TODO: If the request is not authenticated maybe it is a authentication response?
 
-	// TODO: Create an authentication request 
-	return http.StatusInternalServerError, nil
+	// TODO: Create an authentication request
+	authenticateStatusCode, err := a.GenerateAuthenticationRequest(w, r)
+	fmt.Println("returning authnrequest")
+	return authenticateStatusCode, err
+}
+
+func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
+
+	relayState := ""
+	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
+	if (err != nil) {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusFound, nil
 }
 
 func (a SamlServiceProvider) getSessionId(r *http.Request, sessionHeaderName string) (string, error) {
