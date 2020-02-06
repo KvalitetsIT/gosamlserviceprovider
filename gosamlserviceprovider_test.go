@@ -79,7 +79,6 @@ func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
 	fmt.Println(samlResponse)
 
 	assert.Equal(t, http.StatusOK, res.StatusCode)
-	//assert.Equal(t, "no", string(loginResponseBody))
 }
 
 /**
@@ -107,13 +106,8 @@ func createLoginRequest(client *http.Client, authnRequestResponse *http.Response
 		loginFormRequest.AddCookie(c)
 	}
 
-	//fmt.Println(authRequestResponseBodyStr)
-
 	response, err := client.Do(loginFormRequest)
 
-	/*client.PostForm(formUrl, url.Values{
-	"username": { username },
-	"password": { password }})*/
 	if err != nil {
 		panic(err)
 	}
@@ -121,17 +115,16 @@ func createLoginRequest(client *http.Client, authnRequestResponse *http.Response
 }
 
 func createConfig() *SamlServiceProviderConfig {
+	metadataFileName := "testdata/keycloak-metadata.xml"
 
 	keyPair, err := tls.LoadX509KeyPair("testdata/sp.cer", "testdata/sp.pem")
 	if err != nil {
 		panic(err)
 	}
 
+	DownloadMetadata(metadataFileName, "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor")
 	c := new(SamlServiceProviderConfig)
-
-	DownloadMetadata("testdata/keycloak-metadata3.xml", "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor")
-
-	c.IdpMetaDataFile = "testdata/keycloak-metadata3.xml"
+	c.IdpMetaDataFile = metadataFileName
 	c.ServiceProviderKeystore = &keyPair
 	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml"
 	c.EntityId = "test"

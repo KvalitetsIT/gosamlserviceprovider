@@ -10,8 +10,9 @@ services:
    keycloak:
      image: jboss/keycloak:8.0.1
      environment:
-      - KEYCLOAK_USER=keycloak
-      - KEYCLOAK_PASSWORD=keycloak
+#      Set in the keycloak-add-user.json file
+#      - KEYCLOAK_USER=keycloak1
+#      - KEYCLOAK_PASSWORD=keycloak1
       - KEYCLOAK_IMPORT=/importrealms/realm-test.json
      volumes:
       - ./keycloak:/importrealms
@@ -20,23 +21,4 @@ services:
       - "8080:8080"
      networks:
        - gosamlserviceprovider
-   idp:
-     image: kitdocker.kvalitetsit.dk/kvalitetsit/simpleidp:216dc29366c81841266ee8ea7b44133d69bb10f9
-     volumes:
-      - ./citizenidp/cert:/cert
-      - ./citizenidp/citizenidp-metadata:/metadata
-      - ./citizenidp/userdb:/userdb
-     environment:
-      - IDP_CERTIFICATE=certificate.crt
-      - IDP_PRIVATE_KEY=certificate.pem
-      - IDP_ADMIN_PASSWORD=test123
-      - IDP_TECHNICAL_EMAIL=eva@kvalitetsit.dk
-      - IDP_SECRET_SALT=abcd23poiu
-      - IDP_HOSTNAME=idp
-      - IDP_CONTEXTPATH=citizenidp
-      - IDP_PROTOCOL=http
-#     ports:
-#      - "8090:80"
-     networks:
-       - gosamlserviceprovider
-
+   
