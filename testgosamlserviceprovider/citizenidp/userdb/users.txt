@@ -1,3 +1,0 @@
-{ "username": "hansen", "password": "secret987", "attributes": { "uid": "hansen", "urn:dk:gov:saml:cprNumberIdentification": "0102031AB2", "urn:dk:kit:borger:displayName": "Rita Nærø Ågesen Hansen", "urn:ddl:ddlpersona" : "CITIZEN" }}
-{ "username": "petersen", "password": "secret987", "attributes": { "uid": "petersen", "urn:dk:gov:saml:cprNumberIdentification": "0108771GH1", "urn:dk:kit:borger:displayName": "Rune F. Petersen" }}
-{ "username": "nancy", "password": "nancy", "attributes": { "uid": "nancyab", "urn:dk:gov:saml:cprNumberIdentification": "2512484916", "urn:dk:kit:borger:displayName": "Nancy Ann Berggren", "urn:ddl:ddlpersona" : "CITIZEN" }}
