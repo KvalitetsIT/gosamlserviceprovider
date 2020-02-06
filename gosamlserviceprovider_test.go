@@ -55,9 +55,6 @@ func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
 		//	panic(err)
 	}
 
-	//  sectionTitle, err := page.FindByID(`getting-agouti`).Text()
-	//	fmt.Println(fmt.Sprintf("sectiontitle %s", sectionTitle))
-
 	httpClient := httpServer.Client()
 	httpClient.Jar = jar
 
@@ -71,6 +68,7 @@ func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
 	fmt.Println(httpServer.URL)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
+	// login with testuser. Test users is created the keycloak-add-user.json file
 	loginResponse := createLoginRequest(httpClient, res, "eva", "kuk")
 	loginResponseBody, _ := ioutil.ReadAll(loginResponse.Body)
 
@@ -121,7 +119,7 @@ func createConfig() *SamlServiceProviderConfig {
 	if err != nil {
 		panic(err)
 	}
-
+	// download the metadata from keycloak
 	DownloadMetadata(metadataFileName, "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor")
 	c := new(SamlServiceProviderConfig)
 	c.IdpMetaDataFile = metadataFileName
@@ -162,9 +160,12 @@ func DownloadMetadata(filePath string, fileUrl string) {
 	for _, v := range xmlnsArray {
 		xmlnsString = xmlnsString + v + " "
 	}
+
 	// insert namespaces to EntityDescriptor
+	// select the entire EntityDescriptor section
 	entityDescriptorPattern := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>")
 	xmlEntityDescriptor := entityDescriptorPattern.FindString(idpMetadata)
+	// inserts the namespace
 	replacePattern := regexp.MustCompile("test\">")
 	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "test\" "+xmlnsString)
 
