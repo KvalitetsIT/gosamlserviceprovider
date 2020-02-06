@@ -19,6 +19,8 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"regexp"
 )
 
 func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
@@ -126,13 +128,65 @@ func createConfig() *SamlServiceProviderConfig {
 	}
 
 	c := new(SamlServiceProviderConfig)
-	c.IdpMetaDataFile = "testdata/keycloak-metadata2.xml"
+
+	DownloadMetadata("testdata/keycloak-metadata3.xml", "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor")
+
+	c.IdpMetaDataFile = "testdata/keycloak-metadata3.xml"
 	c.ServiceProviderKeystore = &keyPair
 	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml"
 	c.EntityId = "test"
 	c.SignAuthnRequest = false
 	c.Service = new(mockService)
 	return c
+}
+
+func handleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Fetch metadata from idp. Removing EntitiesDescriptor and keeping EntityDescriptor. NS moved from EntitiesDescriptor to EntityDescriptor
+func DownloadMetadata(filePath string, fileUrl string) {
+
+	//download metadata from idp
+	resp, err := http.Get(fileUrl)
+	handleError(err)
+	defer resp.Body.Close()
+	var bodyString string
+	if resp.StatusCode == http.StatusOK {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		handleError(err)
+		bodyString = string(bodyBytes)
+	}
+	idpMetadata := bodyString
+
+	// read namespace from EntitiesDescriptor
+	var xmlns = regexp.MustCompile("xmlns(.)*")
+	// array of namespaces
+	xmlnsArray := xmlns.FindAllString(idpMetadata, -1)
+	xmlnsString := ""
+	for _, v := range xmlnsArray {
+		xmlnsString = xmlnsString + v + " "
+	}
+	// insert namespaces to EntityDescriptor
+	entityDescriptorPattern := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>")
+	xmlEntityDescriptor := entityDescriptorPattern.FindString(idpMetadata)
+	replacePattern := regexp.MustCompile("test\">")
+	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "test\" "+xmlnsString)
+
+	// create file
+	createFile(filePath, xmlEntityDescriptor)
+}
+
+func createFile(filePath string, content string) {
+	f, err := os.Create(filePath)
+	handleError(err)
+	l, err := f.WriteString(content)
+	handleError(err)
+	fmt.Println(l, "bytes written successfully")
+	err = f.Close()
+	handleError(err)
 }
 
 type mockService struct {

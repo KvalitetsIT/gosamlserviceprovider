@@ -1,0 +1,27 @@
+[ {
+  "realm" : "test",
+  "users" : [ {
+    "username" : "eva",
+    "enabled" : true,
+    "credentials" : [ {
+      "type" : "password",
+      "secretData" : "{\"value\":\"QXhEYj12JK5GMCLzDsKpDHSV1d9680nrcDwMTH+P/uQTZjx7kHfs8ZtfPo+HL0VsayVvaLgtsrSipfuVhdwYIw==\",\"salt\":\"QBYy57XQv2IfOpecYFxukQ==\"}",
+      "credentialData" : "{\"hashIterations\":100000,\"algorithm\":\"pbkdf2-sha256\"}"
+    } ],
+    "clientRoles" : {
+      "realm-management" : [ "realm-admin" ]
+    }
+  } ]
+}, {
+  "realm" : "master",
+  "users" : [ {
+    "username" : "keycloak",
+    "enabled" : true,
+    "credentials" : [ {
+      "type" : "password",
+      "secretData" : "{\"value\":\"T6cVfOkRfM3yg2ewup8mnOSw1eKlrNHIgJFOT8Z71SMcI2nrPctX+zF4WHiW+DiitG9bI5BlQDhrbPzDdiUHxw==\",\"salt\":\"Citv3hYJ77yxgbjNo6yzLw==\"}",
+      "credentialData" : "{\"hashIterations\":100000,\"algorithm\":\"pbkdf2-sha256\"}"
+    } ],
+    "realmRoles" : [ "admin" ]
+  } ]
+} ]
