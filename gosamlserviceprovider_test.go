@@ -1,29 +1,27 @@
 package gosamlserviceprovider
 
 import (
+	"encoding/xml"
+	"fmt"
 	"golang.org/x/net/publicsuffix"
+	"gotest.tools/assert"
 	"strings"
 	"testing"
- 	"gotest.tools/assert"
-	"fmt"
-	"encoding/xml"
-//	"encoding/json"
-	"net"
-	"net/http"
-	"net/http/httptest"
-	"net/http/cookiejar"
-	"net/url"
-	"io/ioutil"
-	"crypto/x509"
+	//	"encoding/json"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/pem"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	 "github.com/sclevine/agouti"
+	"github.com/sclevine/agouti"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"net/http/cookiejar"
+	"net/http/httptest"
+	"net/url"
 )
 
-
 func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
-
 
 	// Given
 	options := cookiejar.Options{
@@ -37,77 +35,84 @@ func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
 	config := createConfig()
 	httpServer, _ := createSamlServiceProvider(config, nil)
 
- driver := agouti.ChromeDriver(
-    agouti.ChromeOptions("args", []string{"--headless", "--disable-gpu", "--no-sandbox"}),
-  )
+	driver := agouti.ChromeDriver(
+		agouti.ChromeOptions("args", []string{"--headless", "--disable-gpu", "--no-sandbox"}),
+	)
 
-if err := driver.Start(); err != nil {
-	panic(err)
-  }
+	if err := driver.Start(); err != nil {
+		panic(err)
+	}
 
-  page, err := driver.NewPage()
-  if err != nil {
-	panic(err)
-  }
+	page, err := driver.NewPage()
+	if err != nil {
+		panic(err)
+	}
 
-  if err := page.Navigate(httpServer.URL); err != nil {
-//	panic(err)
-  }
+	// rammer en mockserver med SP
+	if err := page.Navigate(httpServer.URL); err != nil {
+		//	panic(err)
+	}
 
-//  sectionTitle, err := page.FindByID(`getting-agouti`).Text()
-//	fmt.Println(fmt.Sprintf("sectiontitle %s", sectionTitle))
+	//  sectionTitle, err := page.FindByID(`getting-agouti`).Text()
+	//	fmt.Println(fmt.Sprintf("sectiontitle %s", sectionTitle))
 
 	httpClient := httpServer.Client()
 	httpClient.Jar = jar
 
 	// When
 	res, err := httpClient.Get(httpServer.URL)
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 
 	// Then
+	fmt.Println(httpServer.URL)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	loginResponse := createLoginRequest(httpClient, res, "eva", "kuk")
-	authRequestResponseBody, _ := ioutil.ReadAll(loginResponse.Body)
+	loginResponseBody, _ := ioutil.ReadAll(loginResponse.Body)
 
-	assert.Equal(t, "no", string(authRequestResponseBody))
+	samlResponse := strings.SplitN(string(loginResponseBody), "name=\"SAMLResponse\" value=\"", 2)[1]
+	samlResponse = strings.SplitN(samlResponse, "\"/>", 2)[0]
+	fmt.Println(samlResponse)
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	//assert.Equal(t, "no", string(loginResponseBody))
 }
 
-
 /**
-  *  UTILITES til testen
-  */
+ *  UTILITES til testen
+ */
 func createLoginRequest(client *http.Client, authnRequestResponse *http.Response, username string, password string) *http.Response {
 
+	authRequestResponseBody, _ := ioutil.ReadAll(authnRequestResponse.Body)
+	authRequestResponseBodyStr := string(authRequestResponseBody)
+	splitOnMethod := strings.SplitN(authRequestResponseBodyStr, "\" method=\"post\"", 2)
+	splitOnAction := strings.SplitN(splitOnMethod[0], "action=\"", 2)
+	formUrl := strings.ReplaceAll(splitOnAction[1], "&amp;", "&")
 
-  	authRequestResponseBody, _ := ioutil.ReadAll(authnRequestResponse.Body)
-        authRequestResponseBodyStr := string(authRequestResponseBody)
-        splitOnMethod := strings.SplitN(authRequestResponseBodyStr, "\" method=\"post\"", 2)
-        splitOnAction := strings.SplitN(splitOnMethod[0], "action=\"", 2)
-	formUrl := splitOnAction[1]
-	
-        fmt.Println(fmt.Sprintf("formurl: %s", formUrl))
+	fmt.Println(fmt.Sprintf("formurl: %s", formUrl))
 
-	loginForm := url.Values{ "username": { username }, "password": { password }}
+	loginForm := url.Values{"username": {username}, "password": {password}}
+	//loginFormRequest, err := http.NewRequest("POST", "http://echo", strings.NewReader(loginForm.Encode()))
 	loginFormRequest, err := http.NewRequest("POST", formUrl, strings.NewReader(loginForm.Encode()))
 
-        cookies := authnRequestResponse.Cookies()
-        for _, c := range cookies {
-                fmt.Println(fmt.Sprintf("adding cookie: %s", c.String()))
+	loginFormRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	fmt.Println(fmt.Sprintf("request: %v", loginForm))
+	cookies := authnRequestResponse.Cookies()
+	for _, c := range cookies {
+		fmt.Println(fmt.Sprintf("adding cookie: %s", c.String()))
 		loginFormRequest.AddCookie(c)
-        }
-
+	}
 
 	//fmt.Println(authRequestResponseBodyStr)
 
 	response, err := client.Do(loginFormRequest)
 
-/*client.PostForm(formUrl, url.Values{
-		"username": { username },
-		"password": { password }})*/
-	if (err != nil) {
+	/*client.PostForm(formUrl, url.Values{
+	"username": { username },
+	"password": { password }})*/
+	if err != nil {
 		panic(err)
 	}
 	return response
@@ -115,34 +120,34 @@ func createLoginRequest(client *http.Client, authnRequestResponse *http.Response
 
 func createConfig() *SamlServiceProviderConfig {
 
-
 	keyPair, err := tls.LoadX509KeyPair("testdata/sp.cer", "testdata/sp.pem")
-        if (err != nil) {
+	if err != nil {
 		panic(err)
-        }
+	}
 
 	c := new(SamlServiceProviderConfig)
-	c.IdpMetaDataFile = "testdata/keycloak-metadata.xml"
+	c.IdpMetaDataFile = "testdata/keycloak-metadata2.xml"
 	c.ServiceProviderKeystore = &keyPair
 	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml"
+	c.EntityId = "test"
+	c.SignAuthnRequest = false
 	c.Service = new(mockService)
-        return c
+	return c
 }
 
 type mockService struct {
 }
-
 
 func (m mockService) Handle(http.ResponseWriter, *http.Request) (int, error) {
 
 	return http.StatusTeapot, nil
 }
 
-func readCertificate(filename string) *x509.Certificate  {
-        cert, _ := ioutil.ReadFile(filename)
-        certBlock, _ := pem.Decode([]byte(cert))
-        res, _ := x509.ParseCertificate(certBlock.Bytes)
-        return res
+func readCertificate(filename string) *x509.Certificate {
+	cert, _ := ioutil.ReadFile(filename)
+	certBlock, _ := pem.Decode([]byte(cert))
+	res, _ := x509.ParseCertificate(certBlock.Bytes)
+	return res
 }
 
 func createMongoSessionCache() securityprotocol.SessionCache {
@@ -151,22 +156,20 @@ func createMongoSessionCache() securityprotocol.SessionCache {
 	return res
 }
 
-
 func createSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*httptest.Server, *SamlServiceProvider) {
 
 	sp, err := NewSamlServiceProviderFromConfig(config, sessionCache)
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 
 	spMetadata, err := sp.SamlServiceProvider.Metadata()
-	if (err != nil) {
-                panic(err)
-        }
+	if err != nil {
+		panic(err)
+	}
 
 	spMetadataXml, err := xml.MarshalIndent(spMetadata, "", "")
 	fmt.Println(string(spMetadataXml))
-
 
 	// Bridge the test server and the wsp
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -174,23 +177,20 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache s
 		responseCode, err := sp.Handle(w, r)
 		fmt.Println(fmt.Sprintf("bridge2 %d", responseCode))
 		w.WriteHeader(responseCode)
-		if (err != nil) {
+		if err != nil {
 			w.Write([]byte(err.Error()))
 		}
 	}
 
-
-
-        tlsServer := createTlsServer(handler)
+	tlsServer := createTlsServer(handler)
 
 	return tlsServer, sp
 }
 
-
 func createTlsServer(handlerFunc func(http.ResponseWriter, *http.Request)) *httptest.Server {
 
 	l, err := net.Listen("tcp", "127.0.0.1:8080")
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 
@@ -200,4 +200,3 @@ func createTlsServer(handlerFunc func(http.ResponseWriter, *http.Request)) *http
 	ts.Start()
 	return ts
 }
-

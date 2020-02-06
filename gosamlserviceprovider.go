@@ -1,17 +1,17 @@
 package gosamlserviceprovider
 
 import (
-	"io/ioutil"
-	"fmt"
-	"crypto/x509"
 	"crypto/tls"
-	"net/http"
-	"encoding/xml"
+	"crypto/x509"
 	"encoding/base64"
-//	"crypto/sha1"
-//	"encoding/hex"
-//	"strings"
- //       uuid "github.com/google/uuid"
+	"encoding/xml"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	//	"crypto/sha1"
+	//	"encoding/hex"
+	//	"strings"
+	//       uuid "github.com/google/uuid"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 
 	dsig "github.com/russellhaering/goxmldsig"
@@ -25,62 +25,61 @@ const HEADER_AUTHORIZATION = "Authorization"
 
 type SamlServiceProviderConfig struct {
 
-//	TrustCertFiles          []string
+	//	TrustCertFiles          []string
 
-	ServiceProviderKeystore		*tls.Certificate
+	ServiceProviderKeystore *tls.Certificate
 
-	EntityId			string
+	EntityId string
 
-	AssertionConsumerServiceUrl	string
-	AudienceRestriction		string
+	AssertionConsumerServiceUrl string
+	AudienceRestriction         string
 
-	SignAuthnRequest		bool
+	SignAuthnRequest bool
 
-	IdpMetaDataFile			string
+	IdpMetaDataFile string
 
-	SessionHeaderName		string
+	SessionHeaderName string
 
-	Service                 	securityprotocol.HttpHandler
+	Service securityprotocol.HttpHandler
 }
 
 type SamlServiceProvider struct {
 
-//	matchHandler		*securityprotocol.MatchHandler
+	//	matchHandler		*securityprotocol.MatchHandler
 
-	sessionCache		securityprotocol.SessionCache
+	sessionCache securityprotocol.SessionCache
 
-	sessionHeaderName       string
-//	tokenAuthenticator	*TokenAuthenticator
+	sessionHeaderName string
+	//	tokenAuthenticator	*TokenAuthenticator
 
-	Service                 securityprotocol.HttpHandler
+	Service securityprotocol.HttpHandler
 
-//	HoK			bool
+	//	HoK			bool
 
-	SamlServiceProvider	*saml2.SAMLServiceProvider
-//	ClientCertHandler	func(req *http.Request) *x509.Certificate
+	SamlServiceProvider *saml2.SAMLServiceProvider
+	//	ClientCertHandler	func(req *http.Request) *x509.Certificate
 }
 
 func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*SamlServiceProvider, error) {
 
 	samlServiceProvider, err := CreateSamlServiceProvider(config.IdpMetaDataFile, config.AudienceRestriction, config.SignAuthnRequest, config.AssertionConsumerServiceUrl, config.EntityId, config.ServiceProviderKeystore)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 
-        return NewSamlServiceProvider(samlServiceProvider, sessionCache, config.Service, config.SessionHeaderName), nil
+	return NewSamlServiceProvider(samlServiceProvider, sessionCache, config.Service, config.SessionHeaderName), nil
 }
-
 
 func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signAuthnRequests bool, assertionConsumerServiceUrl string, serviceProviderIssuer string, spKeyPair *tls.Certificate) (*saml2.SAMLServiceProvider, error) {
 
 	// Read and parse the IdP metadata
 	rawMetadata, err := ioutil.ReadFile(idpMetaDataFile)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	idpMetadata := &types.EntityDescriptor{}
 	err = xml.Unmarshal(rawMetadata, idpMetadata)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	certStore := dsig.MemoryX509CertificateStore{
@@ -88,16 +87,16 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 	}
 	for _, kd := range idpMetadata.IDPSSODescriptor.KeyDescriptors {
 		for idx, xcert := range kd.KeyInfo.X509Data.X509Certificates {
-			if (xcert.Data == "") {
+			if xcert.Data == "" {
 				return nil, fmt.Errorf("metadata certificate(%d) must not be empty", idx)
 			}
 			certData, err := base64.StdEncoding.DecodeString(xcert.Data)
-			if (err != nil) {
+			if err != nil {
 				return nil, err
 			}
 
 			idpCert, err := x509.ParseCertificate(certData)
-			if (err != nil) {
+			if err != nil {
 				return nil, err
 			}
 
@@ -122,7 +121,7 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 	return sp, nil
 }
 
-func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, service securityprotocol.HttpHandler, sessionHeaderName string) *SamlServiceProvider{
+func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, service securityprotocol.HttpHandler, sessionHeaderName string) *SamlServiceProvider {
 	s := new(SamlServiceProvider)
 	s.SamlServiceProvider = samlServiceProvider
 	s.sessionCache = sessionCache
@@ -132,7 +131,7 @@ func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sess
 }
 
 func (a SamlServiceProvider) Handle(w http.ResponseWriter, r *http.Request) (int, error) {
-        return a.HandleService(w, r, a.Service)
+	return a.HandleService(w, r, a.Service)
 }
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
@@ -140,28 +139,30 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 	fmt.Println("handle1")
 	// Get the session id
 	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
-	if (err != nil) {
+	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 	fmt.Println("handle2")
 
+	// Indsæt tjek om det er en del af samlflow (via url /saml/SSO og /saml/metadata og /saml/logout)
+
 	// The request identifies a session, check that the session is valid and get it
-	if (sessionId != "") {
+	if sessionId != "" {
 		sessionData, err := a.sessionCache.FindSessionDataForSessionId(sessionId)
-		if (err != nil) {
+		if err != nil {
 			return http.StatusInternalServerError, err
 		}
 
-		if (sessionData != nil) {
+		if sessionData != nil {
 
 			// Check if the user is requesting sessiondata
 			handlerFunc := securityprotocol.IsRequestForSessionData(sessionData, a.sessionCache, w, r)
-			if (handlerFunc != nil) {
+			if handlerFunc != nil {
 				return handlerFunc()
 			}
 
 			// The session id ok ... pass-through to next handler
-        		return service.Handle(w, r)
+			return service.Handle(w, r)
 		}
 	}
 
@@ -177,7 +178,7 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 
 	relayState := ""
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
-	if (err != nil) {
+	if err != nil {
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusFound, nil
@@ -185,7 +186,7 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 
 func (a SamlServiceProvider) getSessionId(r *http.Request, sessionHeaderName string) (string, error) {
 	sessionId := r.Header.Get(sessionHeaderName)
-	if (sessionId  != "") {
+	if sessionId != "" {
 		return sessionId, nil
 	}
 	return "", nil
