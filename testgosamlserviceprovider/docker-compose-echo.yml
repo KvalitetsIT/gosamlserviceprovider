@@ -1,0 +1,9 @@
+version: '2'
+networks:
+  gosamlserviceprovider:
+    driver: bridge
+services:
+   echo:
+     image: mendhak/http-https-echo
+     networks:
+       - gosamlserviceprovider
