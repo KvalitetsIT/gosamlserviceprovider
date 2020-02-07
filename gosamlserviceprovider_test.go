@@ -114,13 +114,12 @@ func createLoginRequest(client *http.Client, authnRequestResponse *http.Response
 
 func createConfig() *SamlServiceProviderConfig {
 	metadataFileName := "testdata/keycloak-metadata.xml"
+	idpUrl := "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor"
 
 	keyPair, err := tls.LoadX509KeyPair("testdata/sp.cer", "testdata/sp.pem")
-	if err != nil {
-		panic(err)
-	}
+	handleError(err)
 	// download the metadata from keycloak
-	DownloadMetadata(metadataFileName, "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor")
+	DownloadMetadata(metadataFileName, idpUrl)
 	c := new(SamlServiceProviderConfig)
 	c.IdpMetaDataFile = metadataFileName
 	c.ServiceProviderKeystore = &keyPair
@@ -144,18 +143,16 @@ func DownloadMetadata(filePath string, fileUrl string) {
 	resp, err := http.Get(fileUrl)
 	handleError(err)
 	defer resp.Body.Close()
-	var bodyString string
+	var idpMetadata string
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		handleError(err)
-		bodyString = string(bodyBytes)
+		idpMetadata = string(bodyBytes)
 	}
-	idpMetadata := bodyString
 
 	// read namespace from EntitiesDescriptor
-	var xmlns = regexp.MustCompile("xmlns(.)*")
 	// array of namespaces
-	xmlnsArray := xmlns.FindAllString(idpMetadata, -1)
+	xmlnsArray := regexp.MustCompile("xmlns(.)*").FindAllString(idpMetadata, -1)
 	xmlnsString := ""
 	for _, v := range xmlnsArray {
 		xmlnsString = xmlnsString + v + " "
@@ -163,8 +160,7 @@ func DownloadMetadata(filePath string, fileUrl string) {
 
 	// insert namespaces to EntityDescriptor
 	// select the entire EntityDescriptor section
-	entityDescriptorPattern := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>")
-	xmlEntityDescriptor := entityDescriptorPattern.FindString(idpMetadata)
+	xmlEntityDescriptor := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>").FindString(idpMetadata)
 	// inserts the namespace
 	replacePattern := regexp.MustCompile("test\">")
 	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "test\" "+xmlnsString)
@@ -207,14 +203,10 @@ func createMongoSessionCache() securityprotocol.SessionCache {
 func createSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*httptest.Server, *SamlServiceProvider) {
 
 	sp, err := NewSamlServiceProviderFromConfig(config, sessionCache)
-	if err != nil {
-		panic(err)
-	}
+	handleError(err)
 
 	spMetadata, err := sp.SamlServiceProvider.Metadata()
-	if err != nil {
-		panic(err)
-	}
+	handleError(err)
 
 	spMetadataXml, err := xml.MarshalIndent(spMetadata, "", "")
 	fmt.Println(string(spMetadataXml))
@@ -238,9 +230,7 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache s
 func createTlsServer(handlerFunc func(http.ResponseWriter, *http.Request)) *httptest.Server {
 
 	l, err := net.Listen("tcp", "127.0.0.1:8080")
-	if err != nil {
-		panic(err)
-	}
+	handleError(err)
 
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(handlerFunc))
 	ts.Listener.Close()
