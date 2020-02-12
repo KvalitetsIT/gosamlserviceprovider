@@ -137,13 +137,6 @@ func (a SamlServiceProvider) Handle(w http.ResponseWriter, r *http.Request) (int
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
 
-	// Get the session id
-	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
-    fmt.Println("SessionId: "+sessionId)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
 	// Indsæt tjek om det er en del af samlflow (via url /saml/SSO og /saml/metadata og /saml/logout)
     if strings.HasPrefix(r.URL.Path,"/saml/SSO") {
         //TODO test for HTTP METHOD = POST
@@ -161,6 +154,15 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
     if strings.HasPrefix(r.URL.Path,"/saml/logout") {
 
     }
+
+
+	// Get the session id
+	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
+    fmt.Println("SessionId: "+sessionId)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
 	// The request identifies a session, check that the session is valid and get it
 	if sessionId != "" {
 		sessionData, err := a.sessionCache.FindSessionDataForSessionId(sessionId)
@@ -223,12 +225,14 @@ func (a SamlServiceProvider) HandleSamlLoginResponse(w http.ResponseWriter, r *h
             Name: a.sessionHeaderName,
             Value: sessionData.Sessionid,
             Expires: *assertionInfo.SessionNotOnOrAfter,
+            Path: "/",
             HttpOnly: true,
         }
         http.SetCookie(w , &cookie)
         w.Header().Add(a.sessionHeaderName,sessionData.Sessionid)
         relayState := r.FormValue("RelayState")
         w.Header().Add("Location",relayState)
+        fmt.Println("Returning callback response: ",w)
 		return http.StatusFound,nil
 }
 
@@ -248,12 +252,12 @@ func (a SamlServiceProvider) getSessionId(r *http.Request, sessionHeaderName str
 	if sessionId != "" {
 		return sessionId, nil
 	} else {
-	    fmt.Println("SessionId not found in header")
+	    fmt.Println("SessionId not found in header: ", r.Header)
 	}
 	if cookie != nil {
 	    return cookie.Value, nil
 	} else {
-      	fmt.Println("SessionId not found in cookie")
+      	fmt.Println("SessionId not found in cookies: ",r)
     }
 	return "", nil
 }
