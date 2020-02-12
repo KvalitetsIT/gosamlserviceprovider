@@ -2,18 +2,15 @@ package gosamlserviceprovider
 
 import (
 	"fmt"
-	//"golang.org/x/net/publicsuffix"
 	"gotest.tools/assert"
 	"strings"
 	uuid "github.com/google/uuid"
 	"time"
 	"testing"
-	//	"encoding/json"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	//"github.com/sclevine/agouti"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -26,12 +23,15 @@ import (
 
 var (
   httpServer *httptest.Server
+  validSessionId string
 )
 
 func TestSaml(t *testing.T) {
     httpServer = startHttpServer()
     t.Run("Test SAML Metadata", samlMetadata)
     t.Run("Test Loginflow without sessionId", loginFlow_Basic)
+    t.Run("Test Loginflow with sessionId Cookie doesn't trigger login", valid_SessionId_Cookie)
+    t.Run("Test Loginflow with sessionId Header doesn't trigger login", valid_SessionId_Header)
     t.Run("Test LoginFlow with invalid sessionId",invalid_SessionId_TriggersLogin)
     httpServer.Close()
 }
@@ -75,6 +75,8 @@ func loginFlow_Basic(t *testing.T) {
     //After the callback, login should be succesful,
     //and we should get the Teapot status code from the backend service
     //On the original requested path
+    sessionCookie,_ := callbackResponse.Request.Cookie("MySessionCookie")
+    validSessionId = sessionCookie.Value
     assert.Equal(t, http.StatusTeapot, callbackResponse.StatusCode)
     assert.Equal(t,requestedPath, callbackResponse.Request.URL.Path+"?"+callbackResponse.Request.URL.RawQuery)
 }
@@ -122,6 +124,62 @@ func invalid_SessionId_TriggersLogin(t *testing.T) {
     assert.Equal(t,requestedPath, callbackResponse.Request.URL.Path+"?"+callbackResponse.Request.URL.RawQuery)
 
 }
+
+
+/**
+ This method tests that valid requests with a valid sessionId, does not trigger a login
+ * An user request a resource on the server with an valid sessionID
+ * The SAML module validates the SessionId
+ * After validating the SessionId the user is logged in and receives data from the embedded service
+*/
+func valid_SessionId_Cookie(t *testing.T) {
+     validSessionCookie := http.Cookie{
+         Name:"MySessionCookie",
+         Value: validSessionId,
+         Expires:  time.Now().AddDate(0, 0, 1),
+         Path: "/",
+         HttpOnly: true,
+     }
+    requestedPath := "/test/redirect?noget=1"
+	httpClient := httpServer.Client()
+	cookieJar, _ := cookiejar.New(nil)
+	httpClient.Jar = cookieJar
+	initialRequest,_ := http.NewRequest("GET", httpServer.URL+requestedPath,nil)
+	initialRequest.AddCookie(&validSessionCookie)
+	res, err := httpClient.Do(initialRequest)
+	if err != nil {
+		panic(err)
+	}
+	//We should get the Teapot status code from the backend service
+    //On the original requested path
+    assert.Equal(t, http.StatusTeapot, res.StatusCode)
+    assert.Equal(t,requestedPath, res.Request.URL.Path+"?"+res.Request.URL.RawQuery)
+}
+
+/**
+ This method tests that valid requests with a valid sessionId, does not trigger a login
+ * An user request a resource on the server with an valid sessionID
+ * The SAML module validates the SessionId
+ * After validating the SessionId the user is logged in and receives data from the embedded service
+*/
+func valid_SessionId_Header(t *testing.T) {
+    requestedPath := "/test/redirect?noget=1"
+	httpClient := httpServer.Client()
+	cookieJar, _ := cookiejar.New(nil)
+	httpClient.Jar = cookieJar
+	initialRequest,_ := http.NewRequest("GET", httpServer.URL+requestedPath,nil)
+	initialRequest.Header.Add("MySessionCookie",validSessionId)
+	res, err := httpClient.Do(initialRequest)
+	if err != nil {
+		panic(err)
+	}
+	//We should get the Teapot status code from the backend service
+    //On the original requested path
+    assert.Equal(t, http.StatusTeapot, res.StatusCode)
+    assert.Equal(t,requestedPath, res.Request.URL.Path+"?"+res.Request.URL.RawQuery)
+}
+
+
 
 
 /**
