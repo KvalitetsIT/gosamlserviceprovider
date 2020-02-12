@@ -6,8 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	"strings"
 	"io/ioutil"
 	"net/http"
+	uuid "github.com/google/uuid"
 	//	"crypto/sha1"
 	//	"encoding/hex"
 	//	"strings"
@@ -117,7 +119,6 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 		SPKeyStore:                  spKeyStore,
 	}
 
-	fmt.Println("INIT SP")
 	return sp, nil
 }
 
@@ -136,16 +137,30 @@ func (a SamlServiceProvider) Handle(w http.ResponseWriter, r *http.Request) (int
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
 
-	fmt.Println("handle1")
 	// Get the session id
 	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
+    fmt.Println("SessionId: "+sessionId)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-	fmt.Println("handle2")
 
 	// Indsæt tjek om det er en del af samlflow (via url /saml/SSO og /saml/metadata og /saml/logout)
+    if strings.HasPrefix(r.URL.Path,"/saml/SSO") {
+        //TODO test for HTTP METHOD = POST
+        return a.HandleSamlLoginResponse(w,r)
+    }
 
+    if strings.HasPrefix(r.URL.Path,"/saml/metadata") {
+       //TODO test for HTTP METHOD = GET
+       spMetadata, _ := a.SamlServiceProvider.Metadata()
+       spMetadataXml, _ := xml.MarshalIndent(spMetadata, "", "")
+       w.Write(spMetadataXml)
+       return http.StatusOK, nil
+    }
+
+    if strings.HasPrefix(r.URL.Path,"/saml/logout") {
+
+    }
 	// The request identifies a session, check that the session is valid and get it
 	if sessionId != "" {
 		sessionData, err := a.sessionCache.FindSessionDataForSessionId(sessionId)
@@ -166,17 +181,60 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// TODO: If the request is not authenticated maybe it is a authentication response?
-
-	// TODO: Create an authentication request
 	authenticateStatusCode, err := a.GenerateAuthenticationRequest(w, r)
-	fmt.Println("returning authnrequest")
 	return authenticateStatusCode, err
+}
+
+func (a SamlServiceProvider) HandleSamlLoginResponse(w http.ResponseWriter, r *http.Request) (int, error) {
+
+        err := r.ParseForm()
+		if err != nil {
+		    fmt.Println("Error parsing form data: "+err.Error())
+			return http.StatusBadRequest, nil
+		}
+
+		assertionInfo, err := a.SamlServiceProvider.RetrieveAssertionInfo(r.FormValue("SAMLResponse"))
+		if err != nil {
+		    fmt.Fprintf(w, "Invalid assertions: %s", err.Error())
+			return http.StatusForbidden, nil
+		}
+		if assertionInfo.WarningInfo.InvalidTime {
+		    fmt.Fprintf(w, "Invalid assertions: %s","InvalidTime")
+        	return http.StatusForbidden,nil
+        }
+   		if assertionInfo.WarningInfo.NotInAudience {
+   		    fmt.Fprintf(w, "Invalid assertions: %s","UserNotInAudience")
+            return http.StatusForbidden,nil
+        }
+        // TODO create session and do another redirect
+        assertionXml,_ := xml.Marshal(assertionInfo.Assertions[0])
+        sessionDataCreator,err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(),string(assertionXml))
+        if err != nil {
+           fmt.Println("Error creating sessionData: "+err.Error())
+           return http.StatusBadRequest, nil
+        }
+        sessionData,err := sessionDataCreator.CreateSessionData()
+        if err != nil {
+           fmt.Println("Error creating sessionData: "+err.Error())
+           return http.StatusBadRequest, nil
+        }
+        a.sessionCache.SaveSessionData(sessionData)
+        cookie := http.Cookie{
+            Name: a.sessionHeaderName,
+            Value: sessionData.Sessionid,
+            Expires: *assertionInfo.SessionNotOnOrAfter,
+            HttpOnly: true,
+        }
+        http.SetCookie(w , &cookie)
+        w.Header().Add(a.sessionHeaderName,sessionData.Sessionid)
+        relayState := r.FormValue("RelayState")
+        w.Header().Add("Location",relayState)
+		return http.StatusFound,nil
 }
 
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
 
-	relayState := ""
+	relayState := r.URL.String()
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -186,8 +244,16 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 
 func (a SamlServiceProvider) getSessionId(r *http.Request, sessionHeaderName string) (string, error) {
 	sessionId := r.Header.Get(sessionHeaderName)
+	cookie,_ := r.Cookie(sessionHeaderName)
 	if sessionId != "" {
 		return sessionId, nil
+	} else {
+	    fmt.Println("SessionId not found in header")
 	}
+	if cookie != nil {
+	    return cookie.Value, nil
+	} else {
+      	fmt.Println("SessionId not found in cookie")
+    }
 	return "", nil
 }

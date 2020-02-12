@@ -1,9 +1,8 @@
 package gosamlserviceprovider
 
 import (
-	"encoding/xml"
 	"fmt"
-	"golang.org/x/net/publicsuffix"
+	//"golang.org/x/net/publicsuffix"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -12,7 +11,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	"github.com/sclevine/agouti"
+	//"github.com/sclevine/agouti"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -23,93 +22,112 @@ import (
 	"regexp"
 )
 
-func TestCallServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
+var (
+  httpServer *httptest.Server
+)
 
-	// Given
-	options := cookiejar.Options{
-		PublicSuffixList: publicsuffix.List,
-	}
-	jar, err := cookiejar.New(&options)
-	if err != nil {
-		panic(err)
-	}
+func TestSaml(t *testing.T) {
+    httpServer = startHttpServer()
+    //t.Run("Test SAML Metadata", samlMetadata)
+    t.Run("Test Loginflow", callServiceProviderWithoutSessionTriggersALogin)
+    httpServer.Close()
+}
 
-	config := createConfig()
-	httpServer, _ := createSamlServiceProvider(config, nil)
 
-	driver := agouti.ChromeDriver(
-		agouti.ChromeOptions("args", []string{"--headless", "--disable-gpu", "--no-sandbox"}),
-	)
+func samlMetadata(t *testing.T) {
+	httpClient := httpServer.Client()
+    metadataRequest, _ := http.NewRequest("GET", "http://localhost:8080/saml/metadata",nil)
+    response, _ := httpClient.Do(metadataRequest)
+    assert.Equal(t, http.StatusOK, response.StatusCode)
+    responseBody,_ := ioutil.ReadAll(response.Body)
+    fmt.Println("Response from metadata: "+string(responseBody))
+    assert.Check(t,strings.HasPrefix(string(responseBody),"<EntityDescriptor"))
+}
 
-	if err := driver.Start(); err != nil {
-		panic(err)
-	}
-
-	page, err := driver.NewPage()
-	if err != nil {
-		panic(err)
-	}
-
-	// rammer en mockserver med SP
-	if err := page.Navigate(httpServer.URL); err != nil {
-		//	panic(err)
-	}
+func callServiceProviderWithoutSessionTriggersALogin(t *testing.T) {
 
 	httpClient := httpServer.Client()
-	httpClient.Jar = jar
-
+	cookieJar, _ := cookiejar.New(nil)
+	httpClient.Jar = cookieJar
 	// When
-	res, err := httpClient.Get(httpServer.URL)
+	res, err := httpClient.Get(httpServer.URL+"/test/redirect?noget=1")
 	if err != nil {
 		panic(err)
 	}
 
 	// Then
-	fmt.Println(httpServer.URL)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	// login with testuser. Test users is created the keycloak-add-user.json file
 	loginResponse := createLoginRequest(httpClient, res, "eva", "kuk")
+	assert.Equal(t, http.StatusOK, loginResponse.StatusCode)
+
 	loginResponseBody, _ := ioutil.ReadAll(loginResponse.Body)
+	samlResponse := extractString(string(loginResponseBody), "name=\"SAMLResponse\" value=\"","\"/>")
+	relayState := extractString(string(loginResponseBody), "name=\"RelayState\" value=\"","\"/>")
 
-	samlResponse := strings.SplitN(string(loginResponseBody), "name=\"SAMLResponse\" value=\"", 2)[1]
-	samlResponse = strings.SplitN(samlResponse, "\"/>", 2)[0]
-	fmt.Println(samlResponse)
-
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	callbackURL := extractString(string(loginResponseBody),"action=\"","\">")
+    callbackResponse := doCallback(httpClient,samlResponse,relayState,callbackURL,loginResponse)
+    assert.Equal(t, http.StatusOK, callbackResponse.StatusCode)
 }
+
 
 /**
  *  UTILITES til testen
  */
+func noRedirectPolicy(req *http.Request, via []*http.Request) error {
+   return http.ErrUseLastResponse
+}
+
+
+func extractString(input string, prefix string, postfix string) string {
+    prefixRemoved := strings.SplitN(input, prefix, 2)[1]
+    return strings.SplitN(prefixRemoved, postfix, 2)[0]
+}
+
+func doCallback(client *http.Client, samlResponse string, relayState string, callbackURL string, loginResponse *http.Response) *http.Response {
+   	callbackForm := url.Values{"SAMLResponse": {samlResponse},"RelayState": {relayState}}
+   	callbackRequest, err := http.NewRequest("POST", callbackURL, strings.NewReader(callbackForm.Encode()))
+
+   	callbackRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+   	cookies := loginResponse.Cookies()
+   	for _, c := range cookies {
+   		callbackRequest.AddCookie(c)
+   	}
+   	response, err := client.Do(callbackRequest)
+   	if err != nil {
+   		panic(err)
+   	}
+   	return response
+}
+
 func createLoginRequest(client *http.Client, authnRequestResponse *http.Response, username string, password string) *http.Response {
 
 	authRequestResponseBody, _ := ioutil.ReadAll(authnRequestResponse.Body)
-	authRequestResponseBodyStr := string(authRequestResponseBody)
-	splitOnMethod := strings.SplitN(authRequestResponseBodyStr, "\" method=\"post\"", 2)
-	splitOnAction := strings.SplitN(splitOnMethod[0], "action=\"", 2)
-	formUrl := strings.ReplaceAll(splitOnAction[1], "&amp;", "&")
-
-	fmt.Println(fmt.Sprintf("formurl: %s", formUrl))
-
+	formUrl := strings.ReplaceAll(extractString(string(authRequestResponseBody),"action=\"","\" method=\"post\""), "&amp;", "&")
 	loginForm := url.Values{"username": {username}, "password": {password}}
-	//loginFormRequest, err := http.NewRequest("POST", "http://echo", strings.NewReader(loginForm.Encode()))
 	loginFormRequest, err := http.NewRequest("POST", formUrl, strings.NewReader(loginForm.Encode()))
-
 	loginFormRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Println(fmt.Sprintf("request: %v", loginForm))
 	cookies := authnRequestResponse.Cookies()
 	for _, c := range cookies {
-		fmt.Println(fmt.Sprintf("adding cookie: %s", c.String()))
 		loginFormRequest.AddCookie(c)
 	}
-
 	response, err := client.Do(loginFormRequest)
 
 	if err != nil {
 		panic(err)
 	}
 	return response
+}
+
+func startHttpServer()  *httptest.Server {
+    config := createConfig()
+    sessionCache, err :=  securityprotocol.NewMongoSessionCache("mongo", "sessions", "session")
+    if err != nil {
+      panic(err)
+    }
+    httpServer, _ := createSamlServiceProvider(config, sessionCache)
+    return httpServer
 }
 
 func createConfig() *SamlServiceProviderConfig {
@@ -123,10 +141,12 @@ func createConfig() *SamlServiceProviderConfig {
 	c := new(SamlServiceProviderConfig)
 	c.IdpMetaDataFile = metadataFileName
 	c.ServiceProviderKeystore = &keyPair
-	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml"
+	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml/SSO"
 	c.EntityId = "test"
+	c.AudienceRestriction = "test"
 	c.SignAuthnRequest = false
 	c.Service = new(mockService)
+	c.SessionHeaderName = "MySessionCookie"
 	return c
 }
 
@@ -172,9 +192,8 @@ func DownloadMetadata(filePath string, fileUrl string) {
 func createFile(filePath string, content string) {
 	f, err := os.Create(filePath)
 	handleError(err)
-	l, err := f.WriteString(content)
+	_, err = f.WriteString(content)
 	handleError(err)
-	fmt.Println(l, "bytes written successfully")
 	err = f.Close()
 	handleError(err)
 }
@@ -205,17 +224,9 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache s
 	sp, err := NewSamlServiceProviderFromConfig(config, sessionCache)
 	handleError(err)
 
-	spMetadata, err := sp.SamlServiceProvider.Metadata()
-	handleError(err)
-
-	spMetadataXml, err := xml.MarshalIndent(spMetadata, "", "")
-	fmt.Println(string(spMetadataXml))
-
 	// Bridge the test server and the wsp
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("bridge1")
 		responseCode, err := sp.Handle(w, r)
-		fmt.Println(fmt.Sprintf("bridge2 %d", responseCode))
 		w.WriteHeader(responseCode)
 		if err != nil {
 			w.Write([]byte(err.Error()))
