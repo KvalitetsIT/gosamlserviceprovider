@@ -24,6 +24,7 @@ RUN go get github.com/KvalitetsIT/gosecurityprotocol
 RUN go get github.com/russellhaering/gosaml2
 RUN go get gotest.tools/assert
 
-COPY . /gosamlserviceprovider/
+COPY src /gosamlserviceprovider/
+COPY testdata /gosamlserviceprovider/testdata
 RUN go test gosamlserviceprovider
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/gosamlserviceprovider .
