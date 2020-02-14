@@ -6,23 +6,19 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
+	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"io/ioutil"
 	"net/http"
-	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 
 	dsig "github.com/russellhaering/goxmldsig"
 
 	saml2 "github.com/russellhaering/gosaml2"
 	"github.com/russellhaering/gosaml2/types"
+
+	"go.uber.org/zap"
 )
 
-const HEADER_WWW_AUTHENTICATE = "WWW-Authenticate"
-const HEADER_AUTHORIZATION = "Authorization"
-
 type SamlServiceProviderConfig struct {
-
-	//	TrustCertFiles          []string
-
 	ServiceProviderKeystore *tls.Certificate
 
 	EntityId string
@@ -37,6 +33,8 @@ type SamlServiceProviderConfig struct {
 	SessionHeaderName string
 
 	Service securityprotocol.HttpHandler
+
+	attr string
 }
 
 type SamlServiceProvider struct {
@@ -56,16 +54,18 @@ type SamlServiceProvider struct {
 	//	ClientCertHandler	func(req *http.Request) *x509.Certificate
 
 	SamlHandler *SamlHandler
+
+	Logger *zap.SugaredLogger
 }
 
-func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*SamlServiceProvider, error) {
+func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache, logger *zap.SugaredLogger) (*SamlServiceProvider, error) {
 
 	samlServiceProvider, err := CreateSamlServiceProvider(config.IdpMetaDataFile, config.AudienceRestriction, config.SignAuthnRequest, config.AssertionConsumerServiceUrl, config.EntityId, config.ServiceProviderKeystore)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewSamlServiceProvider(samlServiceProvider, sessionCache, config.Service, config.SessionHeaderName), nil
+	return NewSamlServiceProvider(samlServiceProvider, sessionCache, config.Service, config.SessionHeaderName, logger), nil
 }
 
 func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signAuthnRequests bool, assertionConsumerServiceUrl string, serviceProviderIssuer string, spKeyPair *tls.Certificate) (*saml2.SAMLServiceProvider, error) {
@@ -118,13 +118,14 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 	return sp, nil
 }
 
-func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, service securityprotocol.HttpHandler, sessionHeaderName string) *SamlServiceProvider {
+func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, service securityprotocol.HttpHandler, sessionHeaderName string, logger *zap.SugaredLogger) *SamlServiceProvider {
 	s := new(SamlServiceProvider)
 	s.SamlServiceProvider = samlServiceProvider
 	s.sessionCache = sessionCache
 	s.Service = service
 	s.sessionHeaderName = sessionHeaderName
-	s.SamlHandler = NewSamlHandler("/saml/SSO","/saml/logout","/saml/metadata",s)
+	s.SamlHandler = NewSamlHandler("/saml/SSO", "/saml/logout", "/saml/metadata", s)
+	s.Logger = logger
 	return s
 }
 
@@ -133,13 +134,13 @@ func (a SamlServiceProvider) Handle(w http.ResponseWriter, r *http.Request) (int
 }
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
-    if a.SamlHandler.isSamlProtocol(r) {
-        return a.SamlHandler.Handle(w,r)
-    }
+	if a.SamlHandler.isSamlProtocol(r) {
+		return a.SamlHandler.Handle(w, r)
+	}
 
 	// Get the session id
 	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
-    fmt.Println("SessionId: "+sessionId)
+	fmt.Println("SessionId: " + sessionId)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -180,16 +181,16 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 
 func (a SamlServiceProvider) getSessionId(r *http.Request, sessionHeaderName string) (string, error) {
 	sessionId := r.Header.Get(sessionHeaderName)
-	cookie,_ := r.Cookie(sessionHeaderName)
+	cookie, _ := r.Cookie(sessionHeaderName)
 	if sessionId != "" {
 		return sessionId, nil
 	} else {
-	    fmt.Println("SessionId not found in header: ", r.Header)
+		fmt.Println("SessionId not found in header: ", r.Header)
 	}
 	if cookie != nil {
-	    return cookie.Value, nil
+		return cookie.Value, nil
 	} else {
-      	fmt.Println("SessionId not found in cookies: ",r)
-    }
+		fmt.Println("SessionId not found in cookies: ", r)
+	}
 	return "", nil
 }

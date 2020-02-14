@@ -14,17 +14,12 @@ ADD gitconfig /root/.gitconfig
 # Prepare for custom caddy build
 RUN mkdir /gosamlserviceprovider
 WORKDIR /gosamlserviceprovider
-RUN go mod init gosamlserviceprovider
-
-RUN echo "replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig latest" >> go.mod
-
 ENV GOPRIVATE="github.com/KvalitetsIT/gosecurityprotocol"
-#RUN go get github.com/google/uuid
-RUN go get github.com/KvalitetsIT/gosecurityprotocol
-RUN go get github.com/russellhaering/gosaml2
-RUN go get gotest.tools/assert
+ADD go.mod go.mod
+RUN echo "replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig latest" >> go.mod
+RUN go mod download
 
-COPY src /gosamlserviceprovider/
+COPY samlprovider /gosamlserviceprovider/
 COPY testdata /gosamlserviceprovider/testdata
 RUN go test gosamlserviceprovider
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/gosamlserviceprovider .
