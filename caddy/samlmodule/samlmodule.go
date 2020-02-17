@@ -27,21 +27,20 @@ type SamlProviderModule struct {
 
 	SessionHeaderName string `json:"session_header_name,omitempty"`
 
-	AudienceRestriction string `json:"service_audience,omitempty"`
-
-	ServiceEndpoint string `json:"service_endpoint,omitempty"`
+	AudienceRestriction string `json:"audience_restriction,omitempty"`
 
 	EntityId string `json:"entityId,omitempty"`
 
-	SignAuthnRequest bool   `json:"sign_authn_req,omitempty"`
-	IdpMetaDataUrl   string `json:"ipd_metadata_url,omitempty"`
+	SignAuthnRequest string `json:"sign_authn_req,omitempty"`
+	SignCertFile     string `json:"sign_cert_file,omitempty"`
+	SignKeyFile      string `json:"sign_key_file,omitempty"`
 
-	AssertionConsumerServiceUrl string `json:"callback_url,omitempty"`
+	IdpMetaDataUrl string `json:"idp_metadata_url,omitempty"`
+
+	AssertionConsumerServiceUrl string `json:"assertion_consumer_url,omitempty"`
 	SamlCallbackUrl             string `json:"callback_url,omitempty"`
 	SamlLogoutUrl               string `json:"logout_url,omitempty"`
 	SamlMetadataUrl             string `json:"metadata_url,omitempty"`
-
-	ServiceProviderKeystore *tls.Certificate
 
 	SamlProvider *gosamlserviceprovider.SamlServiceProvider
 
@@ -69,7 +68,7 @@ func init() {
 // CaddyModule returns the Caddy module information.
 func (SamlProviderModule) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		Name: "http.handlers.sam",
+		Name: "http.handlers.samlprovider",
 		New:  func() caddy.Module { return new(SamlProviderModule) },
 	}
 }
@@ -96,24 +95,30 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 	}
 
 	samlProviderConfig := new(gosamlserviceprovider.SamlServiceProviderConfig)
-	samlProviderConfig.ServiceProviderKeystore = m.ServiceProviderKeystore
+	samlProviderConfig.SignAuthnRequest, _ = strconv.ParseBool(m.SignAuthnRequest)
+	m.Logger.Info("Loading keystore")
+	keystore, err := tls.LoadX509KeyPair(m.SignCertFile, m.SignKeyFile)
+	if err != nil {
+		m.Logger.Errorf("Cannot load Keystore: %v", err)
+	}
+	samlProviderConfig.ServiceProviderKeystore = &keystore
 	samlProviderConfig.EntityId = m.EntityId
 	samlProviderConfig.AssertionConsumerServiceUrl = m.AssertionConsumerServiceUrl
 	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
-	samlProviderConfig.SignAuthnRequest = m.SignAuthnRequest
 	samlProviderConfig.IdpMetaDataUrl = m.IdpMetaDataUrl
 	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
 	samlProviderConfig.SamlCallbackUrl = m.SamlCallbackUrl
 	samlProviderConfig.SamlMetadataUrl = m.SamlMetadataUrl
 	samlProviderConfig.SamlLogoutUrl = m.SamlLogoutUrl
 	samlProviderConfig.Logger = m.Logger
+	m.Logger.Infof("Using AssertionConsumerServiceURL: %v", samlProviderConfig.AssertionConsumerServiceUrl)
 	m.SamlProvider, _ = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache)
 	return nil
 }
 
 // Validate implements caddy.Validator.
 func (m *SamlProviderModule) Validate() error {
-
+	m.Logger.Info("Validating module")
 	if len(m.MongoHost) == 0 {
 		return fmt.Errorf("mongo_host must be configured")
 	}
@@ -122,15 +127,13 @@ func (m *SamlProviderModule) Validate() error {
 		return fmt.Errorf("mongo_db must be configured")
 	}
 
-	if len(m.ServiceEndpoint) == 0 {
-		return fmt.Errorf("service_endpoint must be configured")
-	}
-
+	//TODO validation of all required elements
 	return nil
 }
 
 // UnmarshalCaddyfile implements caddyfile.Unmarshaler.
 func (m *SamlProviderModule) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+	m.Logger.Info("Parsing module")
 	for d.Next() {
 		//if !d.Args(&m.Output) {
 		//	return d.ArgErr()

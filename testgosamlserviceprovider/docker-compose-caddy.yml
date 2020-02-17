@@ -1,0 +1,21 @@
+version: '2'
+networks:
+  gosamlserviceprovider:
+    driver: bridge
+services:
+   caddy-resources:
+     image: build-samlmodule-resources/caddy
+     build:
+       context: .
+       dockerfile: Dockerfile-resources-caddytest
+   caddy-server:
+     image: kvalitetsit/caddysamlprovider:latest
+     volumes_from:
+       - caddy-resources:ro
+     ports:
+       - "8787:8787"
+     command:
+      - "-config"
+      - "/caddy/config.json"
+     networks:
+       - gosamlserviceprovider

@@ -16,7 +16,6 @@ RUN mkdir /gosamlserviceprovider
 WORKDIR /gosamlserviceprovider
 ENV GOPRIVATE="github.com/KvalitetsIT/gosecurityprotocol"
 ADD go.mod go.mod
-RUN echo "replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig latest" >> go.mod
 RUN go mod download
 
 COPY samlprovider /gosamlserviceprovider/

@@ -1,0 +1,37 @@
+FROM kvalitetsit/caddysamltemplates
+
+ADD ./testdata/sp.cer /ssl/client.cer
+ADD ./testdata/sp.pem /ssl/client.pem
+
+# Merge config files
+RUN mkdir /caddy
+
+ENV SAML_SESSION_HEADER MYSESSIONHEADER
+ENV MONGO_HOST mongo
+ENV MONGO_DATABASE samlsp
+
+ENV SAML_AUDIENCE_RESTRICTION test
+ENV SAML_IDP_METADATAURL http://keycloak:8080/auth/realms/test/protocol/saml/descriptor
+
+ENV SAML_ENTITY_ID test
+ENV SAML_SIGN_AUTH_REQUEST false
+
+ENV SAML_SIGN_CERT_FILE /ssl/client.cer
+ENV SAML_SIGN_KEY_FILE /ssl/client.pem
+
+ENV SAML_ASSERTION_CONSUMER_URL http://localhost:8787/saml/SSO
+
+ENV SAML_CALLBACK_URL /saml/SSO
+ENV SAML_METADATA_URL /saml/metadata
+ENV SAML_LOGOUT_URL /saml/logout
+ENV LISTEN_PORT 8787
+
+ENV SAML_BACKEND_HOST echo
+ENV SAML_BACKEND_PORT 80
+
+RUN envsubst < /caddyfiletemplates/Caddyfile-saml  > /caddy/config.json
+RUN cat /caddy/config.json
+
+VOLUME /ssl
+VOLUME /caddy
+

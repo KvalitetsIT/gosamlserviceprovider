@@ -1,4 +1,4 @@
-module github.com/KvalitetsIT/gosamlserviceprovider
+module gosamlserviceprovider
 
 go 1.13.4
 

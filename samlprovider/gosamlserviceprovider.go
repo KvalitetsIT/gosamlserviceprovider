@@ -71,6 +71,7 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 	idpMetadata := &types.EntityDescriptor{}
 	err = xml.Unmarshal(rawMetadata, idpMetadata)
 	if err != nil {
+		config.Logger.Errorf("Cannot unmarshal IDP metadata: %v", err)
 		return nil, err
 	}
 	certStore := dsig.MemoryX509CertificateStore{
@@ -113,6 +114,7 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 
 func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 	//download metadata from idp
+	config.Logger.Infof("Downloading IDP metadata from: %s", config.IdpMetaDataUrl)
 	resp, err := http.Get(config.IdpMetaDataUrl)
 	if err != nil {
 		config.Logger.Errorf("Cannot download metadata: %v", err)
@@ -187,7 +189,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
 
-	relayState := r.URL.String()
+	relayState := r.RequestURI
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
 	if err != nil {
 		return http.StatusInternalServerError, err

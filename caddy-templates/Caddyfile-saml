@@ -7,23 +7,14 @@
     }
   },
   "apps": {
+    "tls": {
+    },
     "http": {
       "servers": {
         "srv${LISTEN_PORT}": {
           "listen": [
             ":${LISTEN_PORT}"
           ],
-          "strict_sni_host": false,
-          "tls_connection_policies": [
-            {
-              "client_authentication": {
-                "require": true
-              }
-            }
-          ],
-          "automatic_https": {
-            "disable_redirects": true
-          },
           "routes": [
             {
               "match": [
@@ -39,9 +30,16 @@
                   "session_header_name": "${SAML_SESSION_HEADER}",
                   "mongo_host": "${MONGO_HOST}",
                   "mongo_db": "${MONGO_DATABASE}",
-                  "trust_cert_files": [ ${SAML_TRUST_CERT_FILES} ],
                   "audience_restriction": "${SAML_AUDIENCE_RESTRICTION}",
-                  "idp_metadataurl": "${SAML_IDP_METADATAURL}"
+                  "idp_metadata_url": "${SAML_IDP_METADATAURL}",
+                  "entityId": "${SAML_ENTITY_ID}",
+                  "sign_authn_req": "${SAML_SIGN_AUTH_REQUEST}",
+                  "sign_cert_file": "${SAML_SIGN_CERT_FILE}",
+                  "sign_key_file": "${SAML_SIGN_KEY_FILE}",
+                  "assertion_consumer_url": "${SAML_ASSERTION_CONSUMER_URL}",
+                  "callback_url": "${SAML_CALLBACK_URL}",
+                  "metadata_url": "${SAML_METADATA_URL}",
+                  "logout_url": "${SAML_LOGOUT_URL}"
                 },
                 {
                   "handler": "reverse_proxy",

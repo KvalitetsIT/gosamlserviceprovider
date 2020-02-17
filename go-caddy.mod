@@ -6,11 +6,11 @@ replace github.com/caddyserver/caddy/v2 => github.com/KvalitetsIT/caddy/v2 v2.0.
 
 replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig v0.0.0-20190907195011-53d9398322c5
 
-replace oioidwsrest => ../oioidwsrest
+replace gosamlserviceprovider/samlprovider => ../gosamlserviceprovider
 
 require (
   github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20191211203256-073cc6fea877
   github.com/caddyserver/caddy/v2 v2.0.0-00010101000000-000000000000
   go.uber.org/zap v1.13.0
-  github.com/KvalitetsIT/gosamlserviceprovider v0.0.0-20200217081258-57fe7c6a89ce
+  gosamlserviceprovider/samlprovider v0.0.0-00010101000000-000000000000
 )

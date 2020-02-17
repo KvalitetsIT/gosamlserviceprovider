@@ -10,8 +10,8 @@ COPY go-caddy.mod go.mod
 RUN go mod download
 
 # Kitcaddy module source
-COPY ./caddy-plugin /caddy/
-RUN go test caddy/caddysamlprovider
+COPY caddy /caddy/
+RUN go test caddy/samlmodule
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/caddy .
 
 FROM scratch
