@@ -1,0 +1,65 @@
+{
+  "logging": {
+    "logs": {
+      "default": {
+        "level": "$SAML_CLIENT_LOGLEVEL"
+      }
+    }
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srv${LISTEN_PORT}": {
+          "listen": [
+            ":${LISTEN_PORT}"
+          ],
+          "strict_sni_host": false,
+          "tls_connection_policies": [
+            {
+              "client_authentication": {
+                "require": true
+              }
+            }
+          ],
+          "automatic_https": {
+            "disable_redirects": true
+          },
+          "routes": [
+            {
+              "match": [
+                {
+                  "path": [
+                    "/"
+                  ]
+                }
+              ],
+              "handle": [
+                {
+                  "handler": "samlprovider",
+                  "session_header_name": "${SAML_SESSION_HEADER}",
+                  "mongo_host": "${MONGO_HOST}",
+                  "mongo_db": "${MONGO_DATABASE}",
+                  "trust_cert_files": [ ${SAML_TRUST_CERT_FILES} ],
+                  "audience_restriction": "${SAML_AUDIENCE_RESTRICTION}",
+                  "idp_metadataurl": "${SAML_IDP_METADATAURL}"
+                },
+                {
+                  "handler": "reverse_proxy",
+                  "transport": {
+                    "protocol": "http",
+                    "read_buffer_size": 4096
+                  },
+                  "upstreams": [
+                    {
+                      "dial": "${SAML_BACKEND_HOST}:${SAML_BACKEND_PORT}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

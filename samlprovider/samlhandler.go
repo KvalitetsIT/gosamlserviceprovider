@@ -5,6 +5,7 @@ import (
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 )
@@ -14,14 +15,16 @@ type SamlHandler struct {
 	logoutUrl   string
 	metadataUrl string
 	provider    *SamlServiceProvider
+	Logger      *zap.SugaredLogger
 }
 
-func NewSamlHandler(callbackUrl string, logoutUrl string, metadataUrl string, provider *SamlServiceProvider) *SamlHandler {
+func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProvider) *SamlHandler {
 	s := new(SamlHandler)
-	s.callbackUrl = callbackUrl
-	s.logoutUrl = logoutUrl
-	s.metadataUrl = metadataUrl
+	s.callbackUrl = config.SamlCallbackUrl
+	s.logoutUrl = config.SamlLogoutUrl
+	s.metadataUrl = config.SamlMetadataUrl
 	s.provider = provider
+	s.Logger = config.Logger
 	return s
 }
 
@@ -107,6 +110,5 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	w.Header().Add(handler.provider.sessionHeaderName, sessionData.Sessionid)
 	relayState := r.FormValue("RelayState")
 	w.Header().Add("Location", relayState)
-	fmt.Println("Returning callback response: ", w)
 	return http.StatusFound, nil
 }

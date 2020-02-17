@@ -5,10 +5,12 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 
 	dsig "github.com/russellhaering/goxmldsig"
 
@@ -19,57 +21,50 @@ import (
 )
 
 type SamlServiceProviderConfig struct {
-	ServiceProviderKeystore *tls.Certificate
-
-	EntityId string
-
+	ServiceProviderKeystore     *tls.Certificate
+	EntityId                    string
 	AssertionConsumerServiceUrl string
 	AudienceRestriction         string
-
-	SignAuthnRequest bool
-
-	IdpMetaDataFile string
-
-	SessionHeaderName string
-
-	Service securityprotocol.HttpHandler
+	SignAuthnRequest            bool
+	IdpMetaDataUrl              string
+	SessionHeaderName           string
+	SamlCallbackUrl             string
+	SamlLogoutUrl               string
+	SamlMetadataUrl             string
+	Logger                      *zap.SugaredLogger
 }
 
 type SamlServiceProvider struct {
-
-	//	matchHandler		*securityprotocol.MatchHandler
-
-	sessionCache securityprotocol.SessionCache
-
-	sessionHeaderName string
-	//	tokenAuthenticator	*TokenAuthenticator
-
-	Service securityprotocol.HttpHandler
-
-	//	HoK			bool
-
+	sessionCache        securityprotocol.SessionCache
+	sessionHeaderName   string
 	SamlServiceProvider *saml2.SAMLServiceProvider
-	//	ClientCertHandler	func(req *http.Request) *x509.Certificate
-
-	SamlHandler *SamlHandler
-
-	Logger *zap.SugaredLogger
+	SamlHandler         *SamlHandler
+	Logger              *zap.SugaredLogger
 }
 
-func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache, logger *zap.SugaredLogger) (*SamlServiceProvider, error) {
+func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*SamlServiceProvider, error) {
 
-	samlServiceProvider, err := CreateSamlServiceProvider(config.IdpMetaDataFile, config.AudienceRestriction, config.SignAuthnRequest, config.AssertionConsumerServiceUrl, config.EntityId, config.ServiceProviderKeystore)
+	samlServiceProvider, err := createSamlServiceProvider(config)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewSamlServiceProvider(samlServiceProvider, sessionCache, config.Service, config.SessionHeaderName, logger), nil
+	return newSamlServiceProvider(samlServiceProvider, sessionCache, config), nil
 }
 
-func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signAuthnRequests bool, assertionConsumerServiceUrl string, serviceProviderIssuer string, spKeyPair *tls.Certificate) (*saml2.SAMLServiceProvider, error) {
+func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, config *SamlServiceProviderConfig) *SamlServiceProvider {
+	s := new(SamlServiceProvider)
+	s.SamlServiceProvider = samlServiceProvider
+	s.sessionCache = sessionCache
+	s.sessionHeaderName = config.SessionHeaderName
+	s.SamlHandler = NewSamlHandler(config, s)
+	s.Logger = config.Logger
+	return s
+}
 
+func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLServiceProvider, error) {
 	// Read and parse the IdP metadata
-	rawMetadata, err := ioutil.ReadFile(idpMetaDataFile)
+	rawMetadata, err := DownloadIdpMetadata(config)
 	if err != nil {
 		return nil, err
 	}
@@ -100,15 +95,15 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 		}
 	}
 
-	spKeyStore := dsig.TLSCertKeyStore(*spKeyPair)
+	spKeyStore := dsig.TLSCertKeyStore(*config.ServiceProviderKeystore)
 
 	sp := &saml2.SAMLServiceProvider{
 		IdentityProviderSSOURL:      idpMetadata.IDPSSODescriptor.SingleSignOnServices[0].Location,
 		IdentityProviderIssuer:      idpMetadata.EntityID,
-		ServiceProviderIssuer:       serviceProviderIssuer,
-		AssertionConsumerServiceURL: assertionConsumerServiceUrl,
-		SignAuthnRequests:           signAuthnRequests,
-		AudienceURI:                 audienceUri,
+		ServiceProviderIssuer:       config.EntityId,
+		AssertionConsumerServiceURL: config.AssertionConsumerServiceUrl,
+		SignAuthnRequests:           config.SignAuthnRequest,
+		AudienceURI:                 config.AudienceRestriction,
 		IDPCertificateStore:         &certStore,
 		SPKeyStore:                  spKeyStore,
 	}
@@ -116,19 +111,42 @@ func CreateSamlServiceProvider(idpMetaDataFile string, audienceUri string, signA
 	return sp, nil
 }
 
-func NewSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, service securityprotocol.HttpHandler, sessionHeaderName string, logger *zap.SugaredLogger) *SamlServiceProvider {
-	s := new(SamlServiceProvider)
-	s.SamlServiceProvider = samlServiceProvider
-	s.sessionCache = sessionCache
-	s.Service = service
-	s.sessionHeaderName = sessionHeaderName
-	s.SamlHandler = NewSamlHandler("/saml/SSO", "/saml/logout", "/saml/metadata", s)
-	s.Logger = logger
-	return s
+func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
+	//download metadata from idp
+	resp, err := http.Get(config.IdpMetaDataUrl)
+	if err != nil {
+		config.Logger.Errorf("Cannot download metadata: %v", err)
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		config.Logger.Errorf("Cannot download metadata: %v", err)
+		return nil, errors.New("Cannot download metadata")
+	}
+	defer resp.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		config.Logger.Errorf("Cannot download metadata: %v", err)
+		return nil, err
+	}
+	return fixMetadata(bodyBytes)
 }
 
-func (a SamlServiceProvider) Handle(w http.ResponseWriter, r *http.Request) (int, error) {
-	return a.HandleService(w, r, a.Service)
+func fixMetadata(bodyBytes []byte) ([]byte, error) {
+	idpMetadata := string(bodyBytes)
+	// read namespace from EntitiesDescriptor
+	// array of namespaces
+	xmlnsArray := regexp.MustCompile("xmlns(.)*").FindAllString(idpMetadata, -1)
+	xmlnsString := ""
+	for _, v := range xmlnsArray {
+		xmlnsString = xmlnsString + v + " "
+	}
+	// insert namespaces to EntityDescriptor
+	// select the entire EntityDescriptor section
+	xmlEntityDescriptor := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>").FindString(idpMetadata)
+	// inserts the namespace
+	replacePattern := regexp.MustCompile("test\">")
+	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "test\" "+xmlnsString)
+	return []byte(xmlEntityDescriptor), nil
 }
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {

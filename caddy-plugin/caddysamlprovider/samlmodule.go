@@ -1,6 +1,7 @@
 package samlmodule
 
 import (
+	"crypto/tls"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	gosamlserviceprovider "gosamlserviceprovider/samlprovider"
@@ -26,19 +27,21 @@ type SamlProviderModule struct {
 
 	SessionHeaderName string `json:"session_header_name,omitempty"`
 
-	StsUrl string `json:"sts_url,omitempty"`
-
-	ClientCertFile string `json:"client_cert_file,omitempty"`
-
-	ClientKeyFile string `json:"client_key_file,omitempty"`
-
-	TrustCertFiles []string `json:"trust_cert_files,omitempty"`
+	AudienceRestriction string `json:"service_audience,omitempty"`
 
 	ServiceEndpoint string `json:"service_endpoint,omitempty"`
 
-	AudienceRestriction string `json:"service_audience,omitempty"`
+	EntityId string `json:"entityId,omitempty"`
 
-	SessionDataUrl string `json:"session_data_url,omitempty"`
+	SignAuthnRequest bool   `json:"sign_authn_req,omitempty"`
+	IdpMetaDataUrl   string `json:"ipd_metadata_url,omitempty"`
+
+	AssertionConsumerServiceUrl string `json:"callback_url,omitempty"`
+	SamlCallbackUrl             string `json:"callback_url,omitempty"`
+	SamlLogoutUrl               string `json:"logout_url,omitempty"`
+	SamlMetadataUrl             string `json:"metadata_url,omitempty"`
+
+	ServiceProviderKeystore *tls.Certificate
 
 	SamlProvider *gosamlserviceprovider.SamlServiceProvider
 
@@ -92,27 +95,19 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 		return err
 	}
 
-	//TODO download SAML metadata file from URL
 	samlProviderConfig := new(gosamlserviceprovider.SamlServiceProviderConfig)
-	/*
-		ServiceProviderKeystore *tls.Certificate
-
-		EntityId string
-
-		AssertionConsumerServiceUrl string
-		AudienceRestriction         string
-
-		SignAuthnRequest bool
-
-		IdpMetaDataFile string
-
-		Service securityprotocol.HttpHandler
-	*/
-	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
+	samlProviderConfig.ServiceProviderKeystore = m.ServiceProviderKeystore
+	samlProviderConfig.EntityId = m.EntityId
+	samlProviderConfig.AssertionConsumerServiceUrl = m.AssertionConsumerServiceUrl
 	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
-	//TODO make rest of configuration
-
-	m.SamlProvider, _ = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache, m.logger)
+	samlProviderConfig.SignAuthnRequest = m.SignAuthnRequest
+	samlProviderConfig.IdpMetaDataUrl = m.IdpMetaDataUrl
+	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
+	samlProviderConfig.SamlCallbackUrl = m.SamlCallbackUrl
+	samlProviderConfig.SamlMetadataUrl = m.SamlMetadataUrl
+	samlProviderConfig.SamlLogoutUrl = m.SamlLogoutUrl
+	samlProviderConfig.Logger = m.Logger
+	m.SamlProvider, _ = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache)
 	return nil
 }
 
@@ -125,10 +120,6 @@ func (m *SamlProviderModule) Validate() error {
 
 	if len(m.MongoDb) == 0 {
 		return fmt.Errorf("mongo_db must be configured")
-	}
-
-	if len(m.StsUrl) == 0 {
-		return fmt.Errorf("sts_url must be configured")
 	}
 
 	if len(m.ServiceEndpoint) == 0 {
