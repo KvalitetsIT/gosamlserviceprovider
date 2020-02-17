@@ -33,8 +33,6 @@ type SamlServiceProviderConfig struct {
 	SessionHeaderName string
 
 	Service securityprotocol.HttpHandler
-
-	attr string
 }
 
 type SamlServiceProvider struct {

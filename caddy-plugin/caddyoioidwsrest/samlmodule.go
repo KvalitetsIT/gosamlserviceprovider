@@ -2,27 +2,22 @@ package samlmodule
 
 import (
 	"fmt"
-	gosamlserviceprovider "gosamlserviceprovider/samlprovider"
-	"strconv"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-//	"fmt"
-//	"io"
+	gosamlserviceprovider "gosamlserviceprovider/samlprovider"
 	"net/http"
+	"strconv"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
-	 "go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 const DEFAULT_VALUE_SESSION_HEADER_NAME = "SESSION"
 
-
 type SamlProviderModule struct {
-
-
 	MongoHost string `json:"mongo_host,omitempty"`
 
 	MongoPort string `json:"mongo_port,omitempty"`
@@ -41,7 +36,7 @@ type SamlProviderModule struct {
 
 	ServiceEndpoint string `json:"service_endpoint,omitempty"`
 
-	ServiceAudience string `json:"service_audience,omitempty"`
+	AudienceRestriction string `json:"service_audience,omitempty"`
 
 	SessionDataUrl string `json:"session_data_url,omitempty"`
 
@@ -57,13 +52,11 @@ func (m SamlProviderModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 	nextService.Handler = next
 
 	httpCode, err := m.SamlProvider.HandleService(w, r, nextService)
-	if (httpCode != http.StatusOK) {
+	if httpCode != http.StatusOK {
 		return caddyhttp.Error(httpCode, err)
 	}
 	return err
 }
-
-
 
 func init() {
 	caddy.RegisterModule(SamlProviderModule{})
@@ -80,74 +73,73 @@ func (SamlProviderModule) CaddyModule() caddy.ModuleInfo {
 
 // Provision implements caddy.Provisioner.
 func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
-    m.Logger = ctx.Logger(m).Sugar()
-    m.Logger.Info("Provisioning SamlProvidermodule")
+	m.Logger = ctx.Logger(m).Sugar()
+	m.Logger.Info("Provisioning SamlProvidermodule")
 	// Create Mongo Session Cache
 	mongo_port := "27017"
-	if (len(m.MongoPort) != 0) {
+	if len(m.MongoPort) != 0 {
 		_, conv_err := strconv.Atoi(m.MongoPort)
-        	if (conv_err != nil) {
-                	return conv_err
-        	}
+		if conv_err != nil {
+			return conv_err
+		}
 		mongo_port = m.MongoPort
-        }
+	}
 	mongo_url := fmt.Sprintf("%s:%s", m.MongoHost, mongo_port)
 	m.Logger.Debugf("Using MongoDB:%s", mongo_url)
 	sessionCache, err := securityprotocol.NewMongoSessionCache(mongo_url, m.MongoDb, "samlsessions")
-	if (err != nil) {
-	    m.Logger.Warnf("Can't setup sessionCache: %v", err)
+	if err != nil {
+		m.Logger.Warnf("Can't setup sessionCache: %v", err)
 		return err
 	}
 
-    //TODO download SAML metadata file from URL
-    samlProviderConfig := new(gosamlserviceprovider.SamlServiceProviderConfig)
-        /*
-        	ServiceProviderKeystore *tls.Certificate
+	//TODO download SAML metadata file from URL
+	samlProviderConfig := new(gosamlserviceprovider.SamlServiceProviderConfig)
+	/*
+		ServiceProviderKeystore *tls.Certificate
 
-        	EntityId string
+		EntityId string
 
-        	AssertionConsumerServiceUrl string
-        	AudienceRestriction         string
+		AssertionConsumerServiceUrl string
+		AudienceRestriction         string
 
-        	SignAuthnRequest bool
+		SignAuthnRequest bool
 
-        	IdpMetaDataFile string
+		IdpMetaDataFile string
 
-        	Service securityprotocol.HttpHandler
-        */
-        samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
-        samlProviderConfig. = m.AudienceRestriction
-    //TODO make rest of configuration
+		Service securityprotocol.HttpHandler
+	*/
+	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
+	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
+	//TODO make rest of configuration
 
-	m.SamlProvider = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache,m.logger)
+	m.SamlProvider, _ = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache, m.logger)
 	return nil
 }
 
 // Validate implements caddy.Validator.
-func (m *CaddyOioIdwsRestWsc) Validate() error {
+func (m *SamlProviderModule) Validate() error {
 
-	if (len(m.MongoHost) == 0) {
+	if len(m.MongoHost) == 0 {
 		return fmt.Errorf("mongo_host must be configured")
 	}
 
-        if (len(m.MongoDb) == 0) {
-                return fmt.Errorf("mongo_db must be configured")
-        }
+	if len(m.MongoDb) == 0 {
+		return fmt.Errorf("mongo_db must be configured")
+	}
 
-        if (len(m.StsUrl) == 0) {
-                return fmt.Errorf("sts_url must be configured")
-        }
+	if len(m.StsUrl) == 0 {
+		return fmt.Errorf("sts_url must be configured")
+	}
 
-        if (len(m.ServiceEndpoint) == 0) {
-                return fmt.Errorf("service_endpoint must be configured")
-        }
+	if len(m.ServiceEndpoint) == 0 {
+		return fmt.Errorf("service_endpoint must be configured")
+	}
 
 	return nil
 }
 
-
 // UnmarshalCaddyfile implements caddyfile.Unmarshaler.
-func (m *CaddyOioIdwsRestWsc) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
+func (m *SamlProviderModule) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 	for d.Next() {
 		//if !d.Args(&m.Output) {
 		//	return d.ArgErr()
@@ -157,16 +149,16 @@ func (m *CaddyOioIdwsRestWsc) UnmarshalCaddyfile(d *caddyfile.Dispenser) error {
 }
 
 // parseCaddyfile unmarshals tokens from h into a new Middleware.
-func parseCaddyfileWsc(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
-	var m CaddyOioIdwsRestWsc
+func parseCaddyfileSamlProvider(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
+	var m SamlProviderModule
 	err := m.UnmarshalCaddyfile(h.Dispenser)
 	return m, err
 }
 
 // Interface guards
 var (
-	_ caddy.Provisioner              = (*CaddyOioIdwsRestWsc)(nil)
-	_ caddy.Validator                = (*CaddyOioIdwsRestWsc)(nil)
-	_ caddyhttp.MiddlewareHandler    = (*CaddyOioIdwsRestWsc)(nil)
-	_ caddyfile.Unmarshaler          = (*CaddyOioIdwsRestWsc)(nil)
+	_ caddy.Provisioner           = (*SamlProviderModule)(nil)
+	_ caddy.Validator             = (*SamlProviderModule)(nil)
+	_ caddyhttp.MiddlewareHandler = (*SamlProviderModule)(nil)
+	_ caddyfile.Unmarshaler       = (*SamlProviderModule)(nil)
 )

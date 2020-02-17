@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	uuid "github.com/google/uuid"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gotest.tools/assert"
 	"io/ioutil"
