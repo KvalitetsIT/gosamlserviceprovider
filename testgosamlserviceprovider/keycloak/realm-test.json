@@ -105,6 +105,7 @@
         "exclude.session.state.from.auth.response": "false",
         "saml.signing.certificate": "MIIClzCCAX8CBgFwFXNYYTANBgkqhkiG9w0BAQsFADAPMQ0wCwYDVQQDDAR0ZXN0MB4XDTIwMDIwNTEzMDIyNVoXDTMwMDIwNTEzMDQwNVowDzENMAsGA1UEAwwEdGVzdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJv1tg+GIytQlDmOc4QJLbK7svCMUE9MEv5FISaRp0/w3gble3SJSMURR3PCSrQN7gUO9Rj9HswvR3yYnyALzUNALCZjpFF3hVGXqKLOg7sfFafXXxrHEqyfqaWgcpSv1novbsQMbocv1gebCyOUnnefk6+gsp9iwRDA8Odoy/oJKSHJ6hXOhLOLdO2HF4Calcudsfn1DX4NyjgKN9AKWvdpulB6+GABKjK2mSIdj0V8TkYzZ4tAw5Budos1hzt4RWgnQuCyxJeyqXMWZu+s7Ow162/W79LQo/mIUL8xnF0kFwj+0B8U1t+7BLJbxqbBz95f0BSiq27c+RmdJSqv6KMCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEAEIoDFzYHwX3mwRu5KvkV12DoKSYfa4mDYugmDDkKQjLLBK03Etcd0eO/64YpDcpBfav5R44Sxub4OBsoC66q1a9QmSITP9mt0ZxeO6yEViKBntm0a0RBnqy90mkF6gDb0CNVbwDHIkYRp3BioCIs643kWlBuJmpyS7z/jEzBNRIlrqM1QutoWnJ+nlMhns9EMFV1o/pj+Uk/vIawMmMPFAkB0lxihdhCp6X7dE5w4wScreZgk8ezJcZiBoAYRY4VDy9rrUSOGM+aZ4kw+UCH3lsWj0jZ92WJH2TnT6rJkHyn4AMIOGFEOBAa3EFXsk3ivzH46bvBMeKFPgf65Mn2FA==",
         "saml.signature.algorithm": "RSA_SHA256",
+        "saml_single_logout_service_url_redirect": "http://localhost:8787/saml/SLO",
         "saml_force_name_id_format": "true",
         "saml.client.signature": "false",
         "tls.client.certificate.bound.access.tokens": "false",

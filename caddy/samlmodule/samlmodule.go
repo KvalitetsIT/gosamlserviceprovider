@@ -38,9 +38,14 @@ type SamlProviderModule struct {
 	IdpMetaDataUrl string `json:"idp_metadata_url,omitempty"`
 
 	AssertionConsumerServiceUrl string `json:"assertion_consumer_url,omitempty"`
-	SamlCallbackUrl             string `json:"callback_url,omitempty"`
-	SamlLogoutUrl               string `json:"logout_url,omitempty"`
-	SamlMetadataUrl             string `json:"metadata_url,omitempty"`
+	SLOConsumerServiceUrl       string `json:"slo_consumer_url,omitempty"`
+
+	SamlCallbackUrl string `json:"callback_url,omitempty"`
+	SamlLogoutUrl   string `json:"logout_url,omitempty"`
+	SamlMetadataUrl string `json:"metadata_url,omitempty"`
+
+	CookieDomain string `json:"cookie_domain,omitempty"`
+	CookiePath   string `json:"cookie_path,omitempty"`
 
 	SamlProvider *gosamlserviceprovider.SamlServiceProvider
 
@@ -104,6 +109,9 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 	samlProviderConfig.ServiceProviderKeystore = &keystore
 	samlProviderConfig.EntityId = m.EntityId
 	samlProviderConfig.AssertionConsumerServiceUrl = m.AssertionConsumerServiceUrl
+	samlProviderConfig.SLOConsumerServiceUrl = m.SLOConsumerServiceUrl
+	samlProviderConfig.CookieDomain = m.CookieDomain
+	samlProviderConfig.CookiePath = m.CookiePath
 	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
 	samlProviderConfig.IdpMetaDataUrl = m.IdpMetaDataUrl
 	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
@@ -111,7 +119,7 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 	samlProviderConfig.SamlMetadataUrl = m.SamlMetadataUrl
 	samlProviderConfig.SamlLogoutUrl = m.SamlLogoutUrl
 	samlProviderConfig.Logger = m.Logger
-	m.Logger.Infof("Using AssertionConsumerServiceURL: %v", samlProviderConfig.AssertionConsumerServiceUrl)
+	m.Logger.Infof("Starting SAML provider with config: %v", samlProviderConfig)
 	m.SamlProvider, _ = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache)
 	return nil
 }

@@ -24,6 +24,9 @@ type SamlServiceProviderConfig struct {
 	ServiceProviderKeystore     *tls.Certificate
 	EntityId                    string
 	AssertionConsumerServiceUrl string
+	SLOConsumerServiceUrl       string
+	CookieDomain                string
+	CookiePath                  string
 	AudienceRestriction         string
 	SignAuthnRequest            bool
 	IdpMetaDataUrl              string
@@ -100,9 +103,11 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 
 	sp := &saml2.SAMLServiceProvider{
 		IdentityProviderSSOURL:      idpMetadata.IDPSSODescriptor.SingleSignOnServices[0].Location,
+		IdentityProviderSLOURL:      idpMetadata.IDPSSODescriptor.SingleLogoutServices[0].Location,
 		IdentityProviderIssuer:      idpMetadata.EntityID,
 		ServiceProviderIssuer:       config.EntityId,
 		AssertionConsumerServiceURL: config.AssertionConsumerServiceUrl,
+		ServiceProviderSLOURL:       config.SLOConsumerServiceUrl,
 		SignAuthnRequests:           config.SignAuthnRequest,
 		AudienceURI:                 config.AudienceRestriction,
 		IDPCertificateStore:         &certStore,
@@ -157,8 +162,8 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get the session id
-	sessionId, err := a.getSessionId(r, a.sessionHeaderName)
-	fmt.Println("SessionId: " + sessionId)
+	sessionId, err := a.SamlHandler.GetSessionId(r)
+	a.Logger.Debugf("SessionId: %s", sessionId)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -195,20 +200,4 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusFound, nil
-}
-
-func (a SamlServiceProvider) getSessionId(r *http.Request, sessionHeaderName string) (string, error) {
-	sessionId := r.Header.Get(sessionHeaderName)
-	cookie, _ := r.Cookie(sessionHeaderName)
-	if sessionId != "" {
-		return sessionId, nil
-	} else {
-		fmt.Println("SessionId not found in header: ", r.Header)
-	}
-	if cookie != nil {
-		return cookie.Value, nil
-	} else {
-		fmt.Println("SessionId not found in cookies: ", r)
-	}
-	return "", nil
 }

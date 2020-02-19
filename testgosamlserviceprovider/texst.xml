@@ -1,0 +1,31 @@
+<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+                     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_bf9dacfc-983c-48e7-bacc-bddb34988178"
+                     Version="2.0" IssueInstant="2020-02-19T10:57:59Z" Destination="">
+    <saml:Issuer>test</saml:Issuer>
+    <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:SignedInfo>
+            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
+            <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+            <ds:Reference URI="#_bf9dacfc-983c-48e7-bacc-bddb34988178">
+                <ds:Transforms>
+                    <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+                    <ds:Transform Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
+                </ds:Transforms>
+                <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                <ds:DigestValue>9afSnkhAn/chJR9/7xlCZdbIrh82/Cs27FSFYFFe9gE=</ds:DigestValue>
+            </ds:Reference>
+        </ds:SignedInfo>
+        <ds:SignatureValue>
+            R7hmfkPEVAGX5vuvSVFjidrgi4EdV0/JDncr4EsCH9EGI0sDT+T0IVsCxFqgfNsJDaBeQb/TWSL3/sEMDM0y9wDP9SS6bLXyajmaM6ExwL7kVq24Hz18MV+C9Of8hOddfJYqwvDQWOO92PKC8e+savroLw8+9H3RzA6rUo7HyVylGL2CJfTszHDKWVoZmx5viKSoEzPtFsxxX0TWuvbFHEB4CN0wZpua/PWQeVrSts3dYNCwrInhhnK1QTtGTQ5lMSydcKPdbJVyy0Ryu2QpSS4E18vDVhZNMup70R7YczygxZaKBUeFeKS8LMTls/bPPD9zBZNvlPimZpC5u5fXVOL4FakMe8Xw5JrUL7XlGG/aKorKKR+DoBoVCVJkb0wYRuAD17vyUd1KBXL0DUiXrNPiZkzc4xuDJHGgvhZeOmMJ69+KC/96iFLR6rlqhlDUVJeqJPw09SPaZqgqWyZGBIjQozOqTtUX/XwZEjVHA0qPx5YVh5TGcYVcL3ZggOjBdmkbmYCWWAEz8qV1q4bCdl5VlfFuDC8ZSuEuzt6WuDjQXEjEuo5pgyHx3HL6wex2N1mCiR97ZOrDm/QvldL5bkpbl5DhAtAG1M6VkVqO/FP+1k5wgcUExOGkwGZOSMF/VUDwRdcdKBXbdVprj5hyfQYk5WHrKV0xaMI2QSUUOFU=
+        </ds:SignatureValue>
+        <ds:KeyInfo>
+            <ds:X509Data>
+                <ds:X509Certificate>
+                    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
+                </ds:X509Certificate>
+            </ds:X509Data>
+        </ds:KeyInfo>
+    </ds:Signature>
+    <saml:NameID Format="">eva</saml:NameID>
+    <samlp:SessionIndex>50f1224d-759f-483b-86b1-b94dbc5a7104::68818caa-bc8e-4402-9a1b-35652d1484c0</samlp:SessionIndex>
+</samlp:LogoutRequest>

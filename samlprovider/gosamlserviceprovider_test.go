@@ -31,6 +31,8 @@ func TestSaml(t *testing.T) {
 	t.Run("Test Loginflow with sessionId Cookie doesn't trigger login", valid_SessionId_Cookie)
 	t.Run("Test Loginflow with sessionId Header doesn't trigger login", valid_SessionId_Header)
 	t.Run("Test LoginFlow with invalid sessionId", invalid_SessionId_TriggersLogin)
+
+	//TODO test logout flow
 	httpServer.Close()
 }
 
@@ -242,6 +244,7 @@ func createConfig() *SamlServiceProviderConfig {
 	c.IdpMetaDataUrl = "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor"
 	c.ServiceProviderKeystore = &keyPair
 	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml/SSO"
+	c.SLOConsumerServiceUrl = "http://localhost:8080/saml/SLO"
 	c.EntityId = "test"
 	c.AudienceRestriction = "test"
 	c.SignAuthnRequest = false
@@ -250,6 +253,8 @@ func createConfig() *SamlServiceProviderConfig {
 	c.SamlLogoutUrl = "/saml/logout"
 	c.SamlCallbackUrl = "/saml/SSO"
 	c.SessionHeaderName = "MySessionCookie"
+	c.CookieDomain = ""
+	c.CookiePath = "/"
 	return c
 }
 
