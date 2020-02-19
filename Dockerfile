@@ -19,6 +19,5 @@ ADD go.mod go.mod
 RUN go mod download
 
 COPY samlprovider /gosamlserviceprovider/
-COPY testdata /gosamlserviceprovider/testdata
 RUN go test gosamlserviceprovider
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/gosamlserviceprovider .

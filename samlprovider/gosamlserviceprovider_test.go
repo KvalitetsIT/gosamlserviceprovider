@@ -38,7 +38,7 @@ func TestSaml(t *testing.T) {
 
 func samlMetadata(t *testing.T) {
 	httpClient := httpServer.Client()
-	metadataRequest, _ := http.NewRequest("GET", "http://localhost:8080/saml/metadata", nil)
+	metadataRequest, _ := http.NewRequest("GET", "http://localhost:8787/saml/metadata", nil)
 	response, _ := httpClient.Do(metadataRequest)
 	assert.Equal(t, http.StatusOK, response.StatusCode)
 	responseBody, _ := ioutil.ReadAll(response.Body)
@@ -243,8 +243,8 @@ func createConfig() *SamlServiceProviderConfig {
 	c := new(SamlServiceProviderConfig)
 	c.IdpMetaDataUrl = "http://keycloak:8080/auth/realms/test/protocol/saml/descriptor"
 	c.ServiceProviderKeystore = &keyPair
-	c.AssertionConsumerServiceUrl = "http://localhost:8080/saml/SSO"
-	c.SLOConsumerServiceUrl = "http://localhost:8080/saml/SLO"
+	c.AssertionConsumerServiceUrl = "http://localhost:8787/saml/SSO"
+	c.SLOConsumerServiceUrl = "http://localhost:8787/saml/SLO"
 	c.EntityId = "test"
 	c.AudienceRestriction = "test"
 	c.SignAuthnRequest = false
@@ -293,7 +293,7 @@ func setupSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache se
 
 func createTlsServer(handlerFunc func(http.ResponseWriter, *http.Request)) *httptest.Server {
 
-	l, err := net.Listen("tcp", "127.0.0.1:8080")
+	l, err := net.Listen("tcp", "127.0.0.1:8787")
 	handleError(err)
 
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(handlerFunc))

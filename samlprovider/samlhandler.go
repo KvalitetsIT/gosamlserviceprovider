@@ -109,14 +109,14 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
-	//TODO actually delete session data from storagef
 	cookie := http.Cookie{
-		Name:     handler.provider.sessionHeaderName,
+		Name:     handler.sessionHeaderName,
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)
+	handler.provider.sessionCache.DeleteSessionData(sessionId)
 	fmt.Fprintf(w, "You are succesfully logged out")
 	handler.Logger.Infof("Logging out session: %s ", sessionId)
 	return http.StatusOK, nil
