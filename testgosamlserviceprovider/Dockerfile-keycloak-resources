@@ -1,0 +1,11 @@
+FROM jboss/keycloak:8.0.1
+
+ADD ./keycloak/keycloak-add-user.json /opt/jboss/keycloak/standalone/configuration/keycloak-add-user.json
+ADD ./keycloak/realm-test.json /importrealms/realm-test.json
+
+VOLUME /importrealms
+VOLUME /opt/jboss/keycloak/standalone/configuration/
+
+ENTRYPOINT ["/bin/sleep", "300"]
+
+
