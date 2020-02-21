@@ -95,7 +95,7 @@ pipeline {
 	}
 	post {
 		always {
-			dir('testgosamlprovider') {
+			dir('testgosamlserviceprovider') {
 				sh 'docker-compose -f docker-compose-echo.yml stop'
                 sh 'docker-compose -f docker-compose-caddy.yml stop'
                 sh 'docker-compose stop'
