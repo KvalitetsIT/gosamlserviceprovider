@@ -12,8 +12,8 @@ services:
      image: kvalitetsit/caddysamlprovider:latest
      volumes_from:
        - caddy-resources:ro
-     #ports:
-       #- "8787:8787"
+     ports:
+       - "8787:8787"
      command:
       - "-config"
       - "/caddy/config.json"
