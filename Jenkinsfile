@@ -13,7 +13,7 @@ pipeline {
 
          stage('Make sure that the testenvironments starts from clean') {
             steps {
-               dir('testgosamlprovider') {
+               dir('testgosamlserviceprovider') {
 				 sh 'docker-compose -f docker-compose-echo.yml rm -f'
                  sh 'docker-compose rm -f'
 				 sh 'docker-compose -f docker-compose-caddy.yml rm -f'
@@ -23,7 +23,7 @@ pipeline {
 
 		stage('Startup the testenvironment used by the integration tests') {
 			steps {
-				dir('testgosamlprovider') {
+				dir('testgosamlserviceprovider') {
 					sh 'docker-compose -f docker-compose-echo.yml up -d'
 					sh 'sleep 2s'
 					sh 'docker-compose up -d'
@@ -55,13 +55,13 @@ pipeline {
         stage('Build Docker resouce images for caddy samlprovider module') {
             steps {
                script {
-                 docker.build("build-samlmodule-resources/caddy", "-f ./testgosamlprovider/Dockerfile-resources-caddytest --no-cache ./testgosamlprovider")
+                 docker.build("build-samlmodule-resources/caddy", "-f ./testgosamlserviceprovider/Dockerfile-resources-caddytest --no-cache ./testgosamlserviceprovider")
                }
             }
         }
         stage('Run integration tests for caddy module') {
            steps {
-              dir('testgosamlprovider') {
+              dir('testgosamlserviceprovider') {
                 sh 'docker-compose -f docker-compose-caddy.yml up -d'
               }
            }
