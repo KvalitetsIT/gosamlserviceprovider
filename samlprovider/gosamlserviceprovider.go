@@ -158,6 +158,7 @@ func fixMetadata(bodyBytes []byte) ([]byte, error) {
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
 	if a.SamlHandler.isSamlProtocol(r) {
+		a.Logger.Debugf("Handling request as SAML")
 		return a.SamlHandler.Handle(w, r)
 	}
 
@@ -172,6 +173,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 	if sessionId != "" {
 		sessionData, err := a.sessionCache.FindSessionDataForSessionId(sessionId)
 		if err != nil {
+			a.Logger.Debugf("Cannot look up session in cache: %v", err)
 			return http.StatusInternalServerError, err
 		}
 
@@ -180,6 +182,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 			// Check if the user is requesting sessiondata
 			handlerFunc := securityprotocol.IsRequestForSessionData(sessionData, a.sessionCache, w, r)
 			if handlerFunc != nil {
+				a.Logger.Debugf("Handling session data request")
 				return handlerFunc()
 			}
 
@@ -193,7 +196,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 }
 
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
-
+	a.Logger.Debugf("No Session found, redirecting to IDP")
 	relayState := r.RequestURI
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
 	if err != nil {

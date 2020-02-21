@@ -28,6 +28,7 @@ type SamlHandler struct {
 
 func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProvider) *SamlHandler {
 	s := new(SamlHandler)
+	config.Logger.Debugf("Configuring SamlHandler: %v", config)
 	s.callbackUrl = config.SamlCallbackUrl
 	s.logoutUrl = config.SamlLogoutUrl
 	s.metadataUrl = config.SamlMetadataUrl
@@ -65,9 +66,11 @@ func (handler *SamlHandler) GetSessionId(r *http.Request) (string, error) {
 	sessionId := r.Header.Get(handler.sessionHeaderName)
 	cookie, _ := r.Cookie(handler.sessionHeaderName)
 	if sessionId != "" {
+		handler.Logger.Debugf("SessionId: %v found in Header", sessionId)
 		return sessionId, nil
 	}
 	if cookie != nil {
+		handler.Logger.Debugf("SessionId: %v found in Cookie", cookie.Value)
 		return cookie.Value, nil
 	}
 	return "", nil
@@ -75,24 +78,18 @@ func (handler *SamlHandler) GetSessionId(r *http.Request) (string, error) {
 
 func (handler *SamlHandler) Handle(w http.ResponseWriter, r *http.Request) (int, error) {
 	if strings.HasPrefix(r.URL.Path, handler.callbackUrl) {
-		//TODO test for HTTP METHOD = POST
-		handler.Logger.Infof("Handling login callback")
 		return handler.handleSamlLoginResponse(w, r)
 	}
 
 	if strings.HasPrefix(r.URL.Path, handler.metadataUrl) {
-		//TODO test for HTTP METHOD = GET
-		handler.Logger.Infof("Handling metadata")
 		return handler.handleMetadata(w, r)
 	}
 
 	if strings.HasPrefix(r.URL.Path, handler.logoutUrl) {
-		handler.Logger.Infof("Handling logout")
 		return handler.handleSLO(r, w)
 
 	}
 	if strings.HasPrefix(r.URL.Path, handler.sloCallbackUrl) {
-		handler.Logger.Infof("Handling logout callback")
 		return handler.handleSLOCallback(r, w)
 
 	}
@@ -109,16 +106,22 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
+	handler.Logger.Debugf("Received logout callback from IDP for session: %s ", sessionId)
 	cookie := http.Cookie{
 		Name:     handler.sessionHeaderName,
 		MaxAge:   -1,
 		Path:     "/",
 		HttpOnly: true,
 	}
+	handler.Logger.Debugf("Clearing session cookie")
 	http.SetCookie(w, &cookie)
-	handler.provider.sessionCache.DeleteSessionData(sessionId)
+	handler.Logger.Debugf("Deleting session data from cache")
+	err = handler.provider.sessionCache.DeleteSessionData(sessionId)
+	if err != nil {
+		handler.Logger.Warnf("Unable to delete session data", err)
+		return http.StatusInternalServerError, err
+	}
 	fmt.Fprintf(w, "You are succesfully logged out")
-	handler.Logger.Infof("Logging out session: %s ", sessionId)
 	return http.StatusOK, nil
 }
 
@@ -132,7 +135,7 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
-	handler.Logger.Infof("Logging out session: %s ", sessionId)
+	handler.Logger.Debugf("Initiating log out of session: %s ", sessionId)
 	session, err := handler.provider.sessionCache.FindSessionDataForSessionId(sessionId)
 	if err != nil {
 		handler.Logger.Warnf("Cannot lookup session: %v", err)
@@ -152,7 +155,7 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 		handler.Logger.Warnf("SessionIndex not found on session")
 		return http.StatusInternalServerError, err
 	}
-	handler.Logger.Infof("Build logoutrequest with NameID: %s SessionIndex: %s", nameIDs[0], sessionIndex)
+	handler.Logger.Debugf("Sending logout request to IDP with NameID: %s SessionIndex: %s", nameIDs[0], sessionIndex)
 	logoutRequestDocument, _ := handler.provider.SamlServiceProvider.BuildLogoutRequestDocument(nameIDs[0], sessionIndex)
 	logoutURLRedirect, _ := handler.provider.SamlServiceProvider.BuildLogoutURLRedirect("", logoutRequestDocument)
 	http.Redirect(w, r, logoutURLRedirect, http.StatusFound)
@@ -167,6 +170,7 @@ func (handler *SamlHandler) handleMetadata(w http.ResponseWriter, r *http.Reques
 }
 
 func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *http.Request) (int, error) {
+	handler.Logger.Debugf("Processing Login callback")
 	err := r.ParseForm()
 	if err != nil {
 		handler.Logger.Warnf("Error parsing form data: %v", err)
@@ -185,27 +189,38 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusForbidden, nil
 	}
 	if assertionInfo.WarningInfo.NotInAudience {
+		handler.Logger.Warnf("Invalid assertions: %v", "UserNotInAudience")
 		fmt.Fprintf(w, "Invalid assertions: %s", "UserNotInAudience")
 		return http.StatusForbidden, nil
 	}
-
+	handler.Logger.Debugf("Succesfully validate SAML assertion")
 	assertionXml, _ := xml.Marshal(assertionInfo.Assertions[0])
 	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(), string(assertionXml))
 	if err != nil {
+		handler.Logger.Warnf("Error creating sessionData: %v", err)
 		fmt.Println("Error creating sessionData: " + err.Error())
 		return http.StatusBadRequest, nil
 	}
+	handler.Logger.Debugf("Creating session data")
 	sessionData, err := sessionDataCreator.CreateSessionData()
+	if err != nil {
+		handler.Logger.Warnf("Error creating sessionData: %v", err)
+		fmt.Println("Error creating sessionData: " + err.Error())
+		return http.StatusBadRequest, nil
+	}
 	//TODO shouldn't these be saved in the SAMLSessionDataCreator module??
+	handler.Logger.Debugf("Adding NameID and SessionIndex to session data")
 	sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
 	sessionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex
+	err = handler.provider.sessionCache.SaveSessionData(sessionData)
 	if err != nil {
-		fmt.Println("Error creating sessionData: " + err.Error())
+		handler.Logger.Warnf("Error saving sessionData: %v", err)
+		fmt.Println("Error saving sessionData: " + err.Error())
 		return http.StatusBadRequest, nil
 	}
-	handler.Logger.Infof("SessionData saved for id: %v => %v", sessionData.Sessionid, sessionData.UserAttributes)
 
-	handler.provider.sessionCache.SaveSessionData(sessionData)
+	handler.Logger.Debugf("SessionData saved for id: %v => %v", sessionData.Sessionid, sessionData.UserAttributes)
+	handler.Logger.Debugf("Setting session cookie: %v => %v", handler.provider.sessionHeaderName, sessionData.Sessionid)
 	cookie := http.Cookie{
 		Name:     handler.provider.sessionHeaderName,
 		Value:    sessionData.Sessionid,
@@ -216,6 +231,7 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	http.SetCookie(w, &cookie)
 	w.Header().Add(handler.provider.sessionHeaderName, sessionData.Sessionid)
 	relayState := r.FormValue("RelayState")
+	handler.Logger.Debugf("Redirecting to original URL: %v", relayState)
 	http.Redirect(w, r, relayState, http.StatusFound)
 	return http.StatusFound, nil
 }

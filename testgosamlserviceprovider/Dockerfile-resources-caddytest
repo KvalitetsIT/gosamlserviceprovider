@@ -6,6 +6,8 @@ ADD ./testdata/sp.pem /ssl/client.pem
 # Merge config files
 RUN mkdir /caddy
 
+
+ENV SAML_CLIENT_LOGLEVEL debug
 ENV SAML_SESSION_HEADER MYSESSIONHEADER
 ENV MONGO_HOST mongo
 ENV MONGO_DATABASE samlsp
