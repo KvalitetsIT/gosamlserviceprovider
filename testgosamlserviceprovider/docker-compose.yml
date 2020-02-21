@@ -20,7 +20,7 @@ services:
       - ./keycloak:/importrealms
       - ./keycloak/keycloak-add-user.json:/opt/jboss/keycloak/standalone/configuration/keycloak-add-user.json
      ports:
-      - "8080:8080"
+      #- "8080:8080"
      networks:
        - gosamlserviceprovider
    
