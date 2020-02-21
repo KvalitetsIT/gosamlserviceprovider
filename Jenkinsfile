@@ -38,7 +38,7 @@ pipeline {
         stage('Build Docker image (caddy module)') {
             steps {
                script {
-                  docker.build("kvalitetsit/gosamlprovider-caddy", "-f Dockerfile-caddy .")
+                  docker.build("kvalitetsit/caddysamlprovider", "-f Dockerfile-caddy .")
                }
             }
         }
@@ -66,7 +66,7 @@ pipeline {
 		stage('Tag Docker image and push to registry') {
 		  steps {
 			script {
-              image = docker.image("kvalitetsit/gosamlprovider-caddy")
+              image = docker.image("kvalitetsit/caddysamlprovider")
               image.push("dev")
               if (env.TAG_NAME != null && env.TAG_NAME.startsWith("v")) {
                    echo "Tagging version."
@@ -79,7 +79,7 @@ pipeline {
         stage('Tag Docker image for templates and push to registry') {
            steps {
              script {
-               image = docker.image("kvalitetsit/gosamlprovider-templates")
+               image = docker.image("kvalitetsit/caddysamltemplates")
                image.push("dev")
                if (env.TAG_NAME != null && env.TAG_NAME.startsWith("v")) {
                   echo "Tagging version."
