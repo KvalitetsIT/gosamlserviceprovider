@@ -25,7 +25,6 @@ pipeline {
 			steps {
 				dir('testgosamlserviceprovider') {
 					sh 'docker-compose -f docker-compose-echo.yml up -d'
-					sh 'sleep 2s'
 					sh 'docker-compose up -d'
 					sh 'sleep 3m'
 				}
