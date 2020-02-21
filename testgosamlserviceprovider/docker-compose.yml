@@ -23,4 +23,9 @@ services:
       #- "8080:8080"
      networks:
        - gosamlserviceprovider
+   echo:
+     image: mendhak/http-https-echo
+     networks:
+       - gosamlserviceprovider
+
    
