@@ -26,7 +26,6 @@ pipeline {
 				dir('testgosamlserviceprovider') {
 					sh 'docker-compose -f docker-compose-echo.yml up -d'
 					sh 'docker-compose up -d'
-					sh ' docker ps | grep keycloak | awk "{print $1}" | xargs docker inspect'
 					sh './waitforkeycloak.sh'
 				}
 			}
