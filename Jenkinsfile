@@ -24,7 +24,6 @@ pipeline {
 			steps {
 				dir('testgosamlserviceprovider') {
 					sh 'docker-compose up -d'
-					sh 'cat ~/.docker/config.json'
 					sh './waitforkeycloak.sh'
 				}
 			}
@@ -66,7 +65,6 @@ pipeline {
         }
 		stage('Tag Docker image and push to registry') {
 		  steps {
-			  sh 'cat ~/.docker/config.json'
 			script {
               image = docker.image("kvalitetsit/caddysamlprovider")
               image.push("dev")
