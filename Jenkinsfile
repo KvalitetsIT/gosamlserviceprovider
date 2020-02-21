@@ -23,7 +23,7 @@ pipeline {
 		stage('Startup the testenvironment used by the integration tests') {
 			steps {
 				dir('testgosamlserviceprovider') {
-					sh 'docker-compose up -d'
+					sh 'docker-compose up '
 					sh 'sleep 3m'
 					sh 'docker ps'
 					sh 'docker network list'
