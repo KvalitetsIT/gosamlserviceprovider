@@ -66,6 +66,7 @@ pipeline {
         }
 		stage('Tag Docker image and push to registry') {
 		  steps {
+			  sh 'cat ~/.docker/config.json'
 			script {
               image = docker.image("kvalitetsit/caddysamlprovider")
               image.push("dev")
