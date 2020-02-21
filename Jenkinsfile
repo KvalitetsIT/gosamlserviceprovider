@@ -24,9 +24,9 @@ pipeline {
 		stage('Startup the testenvironment used by the integration tests') {
 			steps {
 				dir('testgosamlserviceprovider') {
-				    sh 'docker pull jboss/keycloak:8.0.1'
 					sh 'docker-compose -f docker-compose-echo.yml up -d'
 					sh 'docker-compose up -d'
+					sh ' docker ps | grep keycloak | awk "{print $1}" | xargs docker inspect'
 					sh './waitforkeycloak.sh'
 				}
 			}
