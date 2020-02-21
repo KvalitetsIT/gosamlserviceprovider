@@ -31,7 +31,7 @@ pipeline {
 		stage('Build Docker image (gosamlprovider module)') {
 			steps {
 				script {
-					docker.build("kvalitetsit/gosamlprovider", "--network testgosamlserviceprovider_gosamlserviceprovider .")
+					docker.build("kvalitetsit/gosamlserviceprovider", "--network testgosamlserviceprovider_gosamlserviceprovider .")
 				}
 			}
 		}

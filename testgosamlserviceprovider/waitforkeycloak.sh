@@ -1,7 +1,4 @@
 #!/bin/bash
-docker ps
-docker network list
-
 `docker run --network testgosamlserviceprovider_gosamlserviceprovider busybox /bin/wget -S http://keycloak:8080/auth/realms/test/protocol/saml/descriptor`
 status=$?
 max_iterations=50
