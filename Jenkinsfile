@@ -23,11 +23,10 @@ pipeline {
 		stage('Startup the testenvironment used by the integration tests') {
 			steps {
 				dir('testgosamlserviceprovider') {
-					sh 'docker-compose up '
+				    sh 'docker-compose version'
+					sh 'docker-compose up -d'
 					sh 'sleep 3m'
 					sh 'docker ps'
-					sh 'docker network list'
-					sh 'docker run --network testgosamlserviceprovider_gosamlserviceprovider busybox /bin/wget -S http://keycloak:8080/auth/realms/test/protocol/saml/descriptor'
 				}
 			}
 		}
