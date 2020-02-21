@@ -45,7 +45,7 @@ pipeline {
         stage('Build Docker image (caddy templates)') {
             steps {
                script {
-                 docker.build("kvalitetsit/gosamlprovider-templates", "-f Dockerfile-caddytemplates .")
+                 docker.build("kvalitetsit/caddysamltemplates", "-f Dockerfile-caddytemplates .")
                }
             }
         }
