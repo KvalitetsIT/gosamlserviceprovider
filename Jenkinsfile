@@ -27,13 +27,16 @@ pipeline {
 					sh 'docker-compose -f docker-compose-echo.yml up -d'
 					sh 'docker-compose up -d'
 					sh 'sleep 3m'
+					sh 'docker ps'
+					sh 'docker network list'
+					sh 'docker run --network testgosamlserviceprovider_gosamlserviceprovider busybox /bin/wget -S http://keycloak:8080/auth/realms/test/protocol/saml/descriptor'
 				}
 			}
 		}
 		stage('Build Docker image (gosamlprovider module)') {
 			steps {
 				script {
-					docker.build("kvalitetsit/gosamlprovider", "--network testgosamlserviceprovider_gosamlserviceprovider -f Dockerfile .")
+					docker.build("kvalitetsit/gosamlprovider", "--network testgosamlserviceprovider_gosamlserviceprovider .")
 				}
 			}
 		}
