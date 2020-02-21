@@ -24,6 +24,7 @@ pipeline {
 			steps {
 				dir('testgosamlserviceprovider') {
 					sh 'docker-compose up -d'
+					sh 'cat ~/.docker/config.json'
 					sh './waitforkeycloak.sh'
 				}
 			}
