@@ -26,7 +26,7 @@ pipeline {
 				dir('testgosamlserviceprovider') {
 					sh 'docker-compose -f docker-compose-echo.yml up -d'
 					sh 'docker-compose up -d'
-					sh './waitforkeycloak.sh'
+					sh 'sleep 3m'
 				}
 			}
 		}
