@@ -23,7 +23,7 @@ pipeline {
 		stage('Startup the testenvironment used by the integration tests') {
 			steps {
 				dir('testgosamlserviceprovider') {
-					sh 'docker-compose up -d --verbose'
+					sh 'docker-compose  --verbose up -d'
 					sh './waitforkeycloak.sh'
 				}
 			}
