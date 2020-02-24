@@ -1,0 +1,219 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: samltest
+  name: samltest
+  namespace: gosidecars
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: samltest
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: samltest
+    spec:
+      containers:
+        - args:
+            - -config
+            - /config/caddy.conf
+          image: kvalitetsit/caddysamlprovider:dev
+          name: caddy-saml-proxy
+          volumeMounts:
+            - mountPath: /config
+              name: caddy-config
+            - mountPath: /tls
+              name: tls-cert
+              readOnly: true
+            - mountPath: /sts
+              name: sts-cert-volume
+              readOnly: true
+          ports:
+           - containerPort: 8443
+             name: https-proxy
+             protocol: TCP
+        - image: mendhak/http-https-echo
+          name: demo
+      initContainers:
+        - env:
+            - name: CADDYFILE
+              value: /config/caddy.conf
+            - name: SAML_CLIENT_LOGLEVEL
+              value: debug
+            - name: LISTEN_PORT
+              value: 8443
+            - name: MONGO_HOST
+              value: mongo.default
+            - name: MONGO_DATABASE
+              value: samltest
+            - name: SAML_SESSION_HEADER
+              value: SESSIONSAMLTEST
+            - name: SAML_AUDIENCE_RESTRICTION
+              value: test
+            - name: SAML_IDP_METADATAURL
+              value: https://telemed-medarbejderlogin-test.rm.dk/auth/realms/broker/protocol/saml/descriptor
+            - name: SAML_ENTITY_ID
+              value: test
+            - name: SAML_SIGN_AUTH_REQUEST
+              value: false
+            - name: SAML_SIGN_CERT_FILE
+              value: /tls/tls.crt
+            - name: SAML_SIGN_KEY_FILE
+              value: /tls/tls.key
+            - name: SAML_ASSERTION_CONSUMER_URL
+              value: https://samltest.test01.kitkube.dk/saml/SSO
+            - name: SAML_SLO_CONSUMER_URL
+              value: https://samltest.test01.kitkube.dk/saml/SLO
+            - name: SAML_METADATA_URL
+              value: /saml/metadata
+            - name: SAML_LOGOUT_URL
+              value: /saml/logout
+            - name: SAML_COOKIE_PATH
+              value: /
+            - name: SAML_COOKIE_DOMAIN
+              value: samltest.test01.kitkube.dk
+            - name: SAML_BACKEND_HOST
+              value: localhost
+            - name: SAML_BACKEND_PORT
+              value: 80
+          image: kvalitetsit/caddysamltemplates:dev
+          name: caddy-config
+          volumeMounts:
+            - mountPath: /config
+              name: caddy-config
+      volumes:
+        - name: tls-cert
+          secret:
+            defaultMode: 420
+            secretName: wsc-certs
+        - emptyDir: {}
+          name: caddy-config
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: samltest
+  namespace: gosidecars
+spec:
+  rules:
+    - host: samltest.test01.kitkube.dk
+      http:
+        paths:
+          - backend:
+              serviceName: samltest
+              servicePort: 8443
+            path: /
+  tls:
+    - hosts:
+        - test01.kitkube.dk
+      secretName: sslcert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: samltest
+  namespace: gosidecars
+spec:
+  ports:
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: https-proxy
+  selector:
+    app.kubernetes.io/instance: samltest
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: samltest
+  name: samltest
+  namespace: gosidecars
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: samltest
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: samltest
+    spec:
+      containers:
+        - args:
+            - -config
+            - /config/caddy.conf
+          image: kvalitetsit/caddysamlprovider:dev
+          imagePullPolicy: IfNotPresent
+          name: caddy-saml-proxy
+          volumeMounts:
+            - mountPath: /config
+              name: caddy-config
+            - mountPath: /tls
+              name: tls-cert
+              readOnly: true
+            - mountPath: /sts
+              name: sts-cert-volume
+              readOnly: true
+            - containerPort: 8443
+              name: https-proxy
+              protocol: TCP
+        - image: mendhak/http-https-echo
+          imagePullPolicy: Always
+          name: demo
+      initContainers:
+        - env:
+            - name: CADDYFILE
+              value: /config/caddy.conf
+            - name: SAML_CLIENT_LOGLEVEL
+              value: debug
+            - name: LISTEN_PORT
+              value: 8443
+            - name: MONGO_HOST
+              value: mongo.default
+            - name: MONGO_DATABASE
+              value: samltest
+            - name: SAML_SESSION_HEADER
+              value: SESSIONSAMLTEST
+            - name: SAML_AUDIENCE_RESTRICTION
+              value: test
+            - name: SAML_IDP_METADATAURL
+              value: https://telemed-medarbejderlogin-test.rm.dk/auth/realms/broker/protocol/saml/descriptor
+            - name: SAML_ENTITY_ID
+              value: test
+            - name: SAML_SIGN_AUTH_REQUEST
+              value: false
+            - name: SAML_SIGN_CERT_FILE
+              value: /tls/tls.crt
+            - name: SAML_SIGN_KEY_FILE
+              value: /tls/tls.key
+            - name: SAML_ASSERTION_CONSUMER_URL
+              value: https://samltest.test01.kitkube.dk/saml/SSO
+            - name: SAML_SLO_CONSUMER_URL
+              value: https://samltest.test01.kitkube.dk/saml/SLO
+            - name: SAML_METADATA_URL
+              value: /saml/metadata
+            - name: SAML_LOGOUT_URL
+              value: /saml/logout
+            - name: SAML_COOKIE_PATH
+              value: /
+            - name: SAML_COOKIE_DOMAIN
+              value: samltest.test01.kitkube.dk
+            - name: SAML_BACKEND_HOST
+              value: localhost
+            - name: SAML_BACKEND_PORT
+              value: 80
+          image: kvalitetsit/caddysamltemplates:dev
+          name: caddy-config
+          volumeMounts:
+            - mountPath: /config
+              name: caddy-config
+      volumes:
+        - name: tls-cert
+          secret:
+            defaultMode: 420
+            secretName: wsc-certs
+        - emptyDir: {}
+          name: caddy-config
+

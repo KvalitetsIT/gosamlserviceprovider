@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type SamlHandler struct {
@@ -226,6 +227,11 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	handler.Logger.Debugf("Adding NameID and SessionIndex to session data")
 	sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
 	sessionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex
+	expiry := assertionInfo.SessionNotOnOrAfter
+	if expiry == nil {
+		time := time.Now().Add(time.Duration(5) * time.Hour * 6)
+		expiry = &time
+	}
 	err = handler.provider.sessionCache.SaveSessionData(sessionData)
 	if err != nil {
 		handler.Logger.Warnf("Error saving sessionData: %v", err)
@@ -238,7 +244,7 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	cookie := http.Cookie{
 		Name:     handler.provider.sessionHeaderName,
 		Value:    sessionData.Sessionid,
-		Expires:  *assertionInfo.SessionNotOnOrAfter,
+		Expires:  *expiry,
 		Path:     "/",
 		HttpOnly: true,
 	}

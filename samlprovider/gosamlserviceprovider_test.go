@@ -19,9 +19,10 @@ import (
 )
 
 var (
-	httpServer     *httptest.Server
-	service        securityprotocol.HttpHandler
-	validSessionId string
+	httpServer          *httptest.Server
+	service             securityprotocol.HttpHandler
+	validSessionId      string
+	samlServiceProvider *SamlServiceProvider
 )
 
 func TestSaml(t *testing.T) {
@@ -273,12 +274,12 @@ func (m mockService) Handle(http.ResponseWriter, *http.Request) (int, error) {
 
 func setupSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*httptest.Server, *SamlServiceProvider) {
 
-	sp, err := NewSamlServiceProviderFromConfig(config, sessionCache)
+	samlServiceProvider, err := NewSamlServiceProviderFromConfig(config, sessionCache)
 	handleError(err)
 
 	// Bridge the test server and the wsp
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		responseCode, err := sp.HandleService(w, r, service)
+		responseCode, err := samlServiceProvider.HandleService(w, r, service)
 		w.WriteHeader(responseCode)
 		if err != nil {
 			w.Write([]byte(err.Error()))
@@ -287,7 +288,7 @@ func setupSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache se
 
 	tlsServer := createTlsServer(handler)
 
-	return tlsServer, sp
+	return tlsServer, samlServiceProvider
 }
 
 func createTlsServer(handlerFunc func(http.ResponseWriter, *http.Request)) *httptest.Server {

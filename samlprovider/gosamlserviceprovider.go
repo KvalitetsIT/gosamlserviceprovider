@@ -141,7 +141,7 @@ func fixMetadata(bodyBytes []byte) ([]byte, error) {
 	idpMetadata := string(bodyBytes)
 	// read namespace from EntitiesDescriptor
 	// array of namespaces
-	xmlnsArray := regexp.MustCompile("xmlns(.)*").FindAllString(idpMetadata, -1)
+	xmlnsArray := regexp.MustCompile("xmlns(:[^=]*)?=\"([^\"])*\"").FindAllString(idpMetadata, -1)
 	xmlnsString := ""
 	for _, v := range xmlnsArray {
 		xmlnsString = xmlnsString + v + " "
@@ -150,8 +150,8 @@ func fixMetadata(bodyBytes []byte) ([]byte, error) {
 	// select the entire EntityDescriptor section
 	xmlEntityDescriptor := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>").FindString(idpMetadata)
 	// inserts the namespace
-	replacePattern := regexp.MustCompile("test\">")
-	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "test\" "+xmlnsString)
+	replacePattern := regexp.MustCompile("<EntityDescriptor ")
+	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "<EntityDescriptor "+xmlnsString)
 	return []byte(xmlEntityDescriptor), nil
 }
 
