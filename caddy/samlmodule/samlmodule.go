@@ -40,7 +40,6 @@ type SamlProviderModule struct {
 	AssertionConsumerServiceUrl string `json:"assertion_consumer_url,omitempty"`
 	SLOConsumerServiceUrl       string `json:"slo_consumer_url,omitempty"`
 
-	SamlCallbackUrl string `json:"callback_url,omitempty"`
 	SamlLogoutUrl   string `json:"logout_url,omitempty"`
 	SamlMetadataUrl string `json:"metadata_url,omitempty"`
 
@@ -115,7 +114,6 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
 	samlProviderConfig.IdpMetaDataUrl = m.IdpMetaDataUrl
 	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
-	samlProviderConfig.SamlCallbackUrl = m.SamlCallbackUrl
 	samlProviderConfig.SamlMetadataUrl = m.SamlMetadataUrl
 	samlProviderConfig.SamlLogoutUrl = m.SamlLogoutUrl
 	samlProviderConfig.Logger = m.Logger

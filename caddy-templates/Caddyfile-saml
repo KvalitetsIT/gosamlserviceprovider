@@ -38,11 +38,10 @@
                   "sign_key_file": "${SAML_SIGN_KEY_FILE}",
                   "assertion_consumer_url": "${SAML_ASSERTION_CONSUMER_URL}",
                   "slo_consumer_url": "${SAML_SLO_CONSUMER_URL}",
-                  "cookie_domain": "${SAML_COOKIE_DOMAIN}",
-                  "cookie_path": "${SAML_COOKIE_PATH}",
-                  "callback_url": "${SAML_CALLBACK_URL}",
                   "metadata_url": "${SAML_METADATA_URL}",
-                  "logout_url": "${SAML_LOGOUT_URL}"
+                  "logout_url": "${SAML_LOGOUT_URL}",
+                  "cookie_domain": "${SAML_COOKIE_DOMAIN}",
+                  "cookie_path": "${SAML_COOKIE_PATH}"
                 },
                 {
                   "handler": "reverse_proxy",

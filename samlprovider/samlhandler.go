@@ -12,10 +12,10 @@ import (
 )
 
 type SamlHandler struct {
-	callbackUrl    string
-	logoutUrl      string
-	metadataUrl    string
-	sloCallbackUrl string
+	callbackPath    string
+	logoutPath      string
+	metadataPath    string
+	sloCallbackPath string
 
 	cookieDomain string
 	cookiePath   string
@@ -29,14 +29,20 @@ type SamlHandler struct {
 func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProvider) *SamlHandler {
 	s := new(SamlHandler)
 	config.Logger.Debugf("Configuring SamlHandler: %v", config)
-	s.callbackUrl = config.SamlCallbackUrl
-	s.logoutUrl = config.SamlLogoutUrl
-	s.metadataUrl = config.SamlMetadataUrl
-	sloUrl, err := url.Parse(config.SLOConsumerServiceUrl)
+	s.logoutPath = config.SamlLogoutUrl
+	s.metadataPath = config.SamlMetadataUrl
+	callback, err := getUrlPath(config.AssertionConsumerServiceUrl)
+	if err != nil {
+		config.Logger.Warnf("Unable to parse callback URL: %v", err)
+	}
+	s.callbackPath = callback
+
+	sloCallbackPath, err := getUrlPath(config.SLOConsumerServiceUrl)
 	if err != nil {
 		config.Logger.Warnf("Unable to parse SLO URL: %v", err)
 	}
-	s.sloCallbackUrl = sloUrl.Path
+	s.sloCallbackPath = sloCallbackPath
+
 	s.cookieDomain = config.CookieDomain
 	s.cookiePath = config.CookiePath
 	s.sessionHeaderName = config.SessionHeaderName
@@ -46,17 +52,25 @@ func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProv
 	return s
 }
 
+func getUrlPath(urlString string) (string, error) {
+	parsedUrl, err := url.Parse(urlString)
+	if err != nil {
+		return "", err
+	}
+	return parsedUrl.Path, nil
+}
+
 func (handler *SamlHandler) isSamlProtocol(r *http.Request) bool {
-	if strings.HasPrefix(r.URL.Path, handler.callbackUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.callbackPath) {
 		return true
 	}
-	if strings.HasPrefix(r.URL.Path, handler.metadataUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.metadataPath) {
 		return true
 	}
-	if strings.HasPrefix(r.URL.Path, handler.logoutUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.logoutPath) {
 		return true
 	}
-	if strings.HasPrefix(r.URL.Path, handler.sloCallbackUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.sloCallbackPath) {
 		return true
 	}
 	return false
@@ -77,19 +91,19 @@ func (handler *SamlHandler) GetSessionId(r *http.Request) (string, error) {
 }
 
 func (handler *SamlHandler) Handle(w http.ResponseWriter, r *http.Request) (int, error) {
-	if strings.HasPrefix(r.URL.Path, handler.callbackUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.callbackPath) {
 		return handler.handleSamlLoginResponse(w, r)
 	}
 
-	if strings.HasPrefix(r.URL.Path, handler.metadataUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.metadataPath) {
 		return handler.handleMetadata(w, r)
 	}
 
-	if strings.HasPrefix(r.URL.Path, handler.logoutUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.logoutPath) {
 		return handler.handleSLO(r, w)
 
 	}
-	if strings.HasPrefix(r.URL.Path, handler.sloCallbackUrl) {
+	if strings.HasPrefix(r.URL.Path, handler.sloCallbackPath) {
 		return handler.handleSLOCallback(r, w)
 
 	}
@@ -163,7 +177,7 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 }
 
 func (handler *SamlHandler) handleMetadata(w http.ResponseWriter, r *http.Request) (int, error) {
-	spMetadata, _ := handler.provider.SamlServiceProvider.Metadata()
+	spMetadata, _ := handler.provider.SamlServiceProvider.MetadataWithSLO(24)
 	spMetadataXml, _ := xml.MarshalIndent(spMetadata, "", "")
 	w.Write(spMetadataXml)
 	return http.StatusOK, nil

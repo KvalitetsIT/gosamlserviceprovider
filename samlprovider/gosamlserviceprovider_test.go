@@ -251,7 +251,6 @@ func createConfig() *SamlServiceProviderConfig {
 	c.Logger = zap.NewNop().Sugar()
 	c.SamlMetadataUrl = "/saml/metadata"
 	c.SamlLogoutUrl = "/saml/logout"
-	c.SamlCallbackUrl = "/saml/SSO"
 	c.SessionHeaderName = "MySessionCookie"
 	c.CookieDomain = ""
 	c.CookiePath = "/"

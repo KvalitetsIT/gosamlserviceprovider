@@ -31,7 +31,6 @@ type SamlServiceProviderConfig struct {
 	SignAuthnRequest            bool
 	IdpMetaDataUrl              string
 	SessionHeaderName           string
-	SamlCallbackUrl             string
 	SamlLogoutUrl               string
 	SamlMetadataUrl             string
 	Logger                      *zap.SugaredLogger

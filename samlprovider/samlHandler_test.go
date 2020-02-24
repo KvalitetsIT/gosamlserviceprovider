@@ -23,9 +23,9 @@ func setup() {
 	c := new(SamlServiceProviderConfig)
 	c.SamlMetadataUrl = "/saml/metadata"
 	c.SamlLogoutUrl = "/saml/logout"
-	c.SamlCallbackUrl = "/saml/SSO"
 	c.SessionHeaderName = "MySessionCookie"
-	c.SLOConsumerServiceUrl = "http://localhost:8787/saml/SSO"
+	c.SLOConsumerServiceUrl = "http://localhost:8787/saml/SLO"
+	c.AssertionConsumerServiceUrl = "http://localhost:8787/saml/SSO"
 	c.CookieDomain = ""
 	c.CookiePath = "/"
 	c.Logger = zap.NewNop().Sugar()
@@ -54,11 +54,11 @@ func testGetSessionId(t *testing.T) {
 }
 
 func testIsSamlRequest(t *testing.T) {
-	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.metadataUrl}}))
-	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.logoutUrl}}))
-	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.callbackUrl}}))
-	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.sloCallbackUrl}}))
-	assert.Assert(t, !samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: "/noget" + samlHandler.sloCallbackUrl}}))
+	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.metadataPath}}))
+	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.logoutPath}}))
+	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.callbackPath}}))
+	assert.Assert(t, samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: samlHandler.sloCallbackPath}}))
+	assert.Assert(t, !samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: "/noget" + samlHandler.sloCallbackPath}}))
 	assert.Assert(t, !samlHandler.isSamlProtocol(&http.Request{URL: &url.URL{Path: "/saml"}}))
 
 }

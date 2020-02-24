@@ -2,4 +2,6 @@ FROM alpine:3.10.3
 RUN apk add --update --no-cache gettext
 COPY ./caddy-templates/Caddyfile-saml /caddyfiletemplates/Caddyfile-saml
 ENV SAML_CLIENT_LOGLEVEL info
+ENV TEMPLATE_FILE /caddyfiletemplates/Caddyfile-saml
+ENV CADDYFILE /config
 ENTRYPOINT envsubst < ${TEMPLATE_FILE} > ${CADDYFILE}
