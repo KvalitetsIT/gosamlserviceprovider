@@ -59,7 +59,7 @@ spec:
             - name: SAML_CLIENT_LOGLEVEL
               value: debug
             - name: LISTEN_PORT
-              value: "8383"
+              value: "8443"
             - name: MONGO_HOST
               value: mongo.default
             - name: MONGO_DATABASE
@@ -123,9 +123,9 @@ spec:
           - name: WSC_CLIENT_KEY_FILE
             value: /tls/tls.key
           - name: WSC_SERVICE_ENDPOINT_HOST
-            value: wspdemo1.test01.kitkube.dk
+            value: wspdemo1.test01.kitkube.dk //TODO
           - name: WSC_SERVICE_ENDPOINT_PORT
-            value: "443"
+            value: "443" //TODO
           - name: WSC_SERVICE_ENDPOINT_CONTEXT
           - name: WSC_SESSION_DATA_URL
             value: http://localhost:8443/getsessiondata
@@ -185,7 +185,7 @@ metadata:
               - mountPath: /sts
                 name: sts-cert-volume
                 readOnly: true
-          - image: mendhak/http-https-echo:latest
+          - image: telemed-dockerregistry-test.rm.dk/kvalitetsit/serviceprovider-wsp:1.0
             imagePullPolicy: Always
             name: echo
             ports:
@@ -213,7 +213,7 @@ metadata:
               - name: WSP_BACKEND_HOST
                 value: localhost
               - name: WSP_BACKEND_PORT
-                value: "80"
+                value: "8080"
               - name: WSP_AUDIENCE_RESTRICTION
                 value: urn:medcom:videoapi //TODO
               - name: WSP_TRUST_CERT_FILES
