@@ -99,7 +99,7 @@ spec:
             - name: SAML_BACKEND_PORT
               value: "80"
           image: kvalitetsit/caddysamltemplates:dev
-          name: caddy-config
+          name: caddy-config-saml
           volumeMounts:
             - mountPath: /config
               name: caddy-config
@@ -135,7 +135,7 @@ spec:
             value: debug
           image: kvalitetsit/gooioidwsrest-templates:1.1.2j
           imagePullPolicy: IfNotPresent
-          name: caddy-config
+          name: caddy-config-wsc
           volumeMounts:
             - mountPath: /config
               name: caddy-config
@@ -143,7 +143,7 @@ spec:
         - name: tls-cert
           secret:
             defaultMode: 420
-            secretName: samltest-certs
+            secretName: saml-cert
         - emptyDir: {}
           name: caddy-config
         - name: sts-cert-volume

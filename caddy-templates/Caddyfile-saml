@@ -6,6 +6,10 @@
       }
     }
   },
+
+  "admin": {
+    "listen": "localhost:2020"
+  },
   "apps": {
     "tls": {
     },
