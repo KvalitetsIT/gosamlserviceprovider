@@ -21,11 +21,12 @@ func TestSamlHandler(t *testing.T) {
 
 func setup() {
 	c := new(SamlServiceProviderConfig)
-	c.SamlMetadataUrl = "/saml/metadata"
-	c.SamlLogoutUrl = "/saml/logout"
+	c.SamlMetadataPath = "/saml/metadata"
+	c.SamlLogoutPath = "/saml/logout"
+	c.SamlSLOPath = "/saml/SLO"
+	c.SamlSSOPath = "/saml/SSO"
 	c.SessionHeaderName = "MySessionCookie"
-	c.SLOConsumerServiceUrl = "http://localhost:8787/saml/SLO"
-	c.AssertionConsumerServiceUrl = "http://localhost:8787/saml/SSO"
+	c.ExternalUrl = "http://localhost:8787"
 	c.CookieDomain = ""
 	c.CookiePath = "/"
 	c.Logger = zap.NewNop().Sugar()

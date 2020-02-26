@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -21,7 +22,8 @@ type SamlHandler struct {
 	cookieDomain string
 	cookiePath   string
 
-	sessionHeaderName string
+	sessionHeaderName  string
+	sessionExpiryHours string
 
 	provider *SamlServiceProvider
 	Logger   *zap.SugaredLogger
@@ -30,23 +32,14 @@ type SamlHandler struct {
 func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProvider) *SamlHandler {
 	s := new(SamlHandler)
 	config.Logger.Debugf("Configuring SamlHandler: %v", config)
-	s.logoutPath = config.SamlLogoutUrl
-	s.metadataPath = config.SamlMetadataUrl
-	callback, err := getUrlPath(config.AssertionConsumerServiceUrl)
-	if err != nil {
-		config.Logger.Warnf("Unable to parse callback URL: %v", err)
-	}
-	s.callbackPath = callback
-
-	sloCallbackPath, err := getUrlPath(config.SLOConsumerServiceUrl)
-	if err != nil {
-		config.Logger.Warnf("Unable to parse SLO URL: %v", err)
-	}
-	s.sloCallbackPath = sloCallbackPath
-
+	s.logoutPath = config.SamlLogoutPath
+	s.metadataPath = config.SamlMetadataPath
+	s.callbackPath = config.SamlSSOPath
+	s.sloCallbackPath = config.SamlSLOPath
 	s.cookieDomain = config.CookieDomain
 	s.cookiePath = config.CookiePath
 	s.sessionHeaderName = config.SessionHeaderName
+	s.sessionExpiryHours = config.SessionExpiryHours
 
 	s.provider = provider
 	s.Logger = config.Logger
@@ -125,7 +118,8 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 	cookie := http.Cookie{
 		Name:     handler.sessionHeaderName,
 		MaxAge:   -1,
-		Path:     "/",
+		Domain:   handler.cookieDomain,
+		Path:     handler.cookiePath,
 		HttpOnly: true,
 	}
 	handler.Logger.Debugf("Clearing session cookie")
@@ -179,7 +173,7 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 
 func (handler *SamlHandler) handleMetadata(w http.ResponseWriter, r *http.Request) (int, error) {
 	spMetadata, _ := handler.provider.SamlServiceProvider.MetadataWithSLO(24)
-	spMetadataXml, _ := xml.MarshalIndent(spMetadata, "", "")
+	spMetadataXml, _ := xml.MarshalIndent(spMetadata, "", "  ")
 	w.Write(spMetadataXml)
 	return http.StatusOK, nil
 }
@@ -229,7 +223,12 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	sessionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex
 	expiry := assertionInfo.SessionNotOnOrAfter
 	if expiry == nil {
-		time := time.Now().Add(time.Duration(5) * time.Hour * 6)
+		hours, err := strconv.Atoi(handler.sessionExpiryHours)
+		if err != nil {
+			hours = 3
+		}
+		handler.Logger.Infof("Expiry is not provided in SAML assertion, using %v hours", hours)
+		time := time.Now().Add(time.Duration(hours) * time.Hour)
 		expiry = &time
 	}
 	err = handler.provider.sessionCache.SaveSessionData(sessionData)
@@ -245,7 +244,8 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		Name:     handler.provider.sessionHeaderName,
 		Value:    sessionData.Sessionid,
 		Expires:  *expiry,
-		Path:     "/",
+		Domain:   handler.cookieDomain,
+		Path:     handler.cookiePath,
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)

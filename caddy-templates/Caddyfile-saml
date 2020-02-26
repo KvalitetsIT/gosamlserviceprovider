@@ -28,6 +28,7 @@
                 {
                   "handler": "samlprovider",
                   "session_header_name": "${SAML_SESSION_HEADER}",
+                  "session_expiry_hours": "${SAML_SESSION_EXPIRY_HOURS}",
                   "mongo_host": "${MONGO_HOST}",
                   "mongo_db": "${MONGO_DATABASE}",
                   "audience_restriction": "${SAML_AUDIENCE_RESTRICTION}",
@@ -36,10 +37,13 @@
                   "sign_authn_req": "${SAML_SIGN_AUTH_REQUEST}",
                   "sign_cert_file": "${SAML_SIGN_CERT_FILE}",
                   "sign_key_file": "${SAML_SIGN_KEY_FILE}",
-                  "assertion_consumer_url": "${SAML_ASSERTION_CONSUMER_URL}",
-                  "slo_consumer_url": "${SAML_SLO_CONSUMER_URL}",
-                  "metadata_url": "${SAML_METADATA_URL}",
-                  "logout_url": "${SAML_LOGOUT_URL}",
+
+                  "external_url": "${SAML_EXTERNAL_URL}",
+                  "metadata_path": "${SAML_METADATA_PATH}",
+                  "logout_path": "${SAML_LOGOUT_PATH}",
+                  "slo_path": "${SAML_SLO_PATH}",
+                  "sso_path": "${SAML_SSO_PATH}",
+
                   "cookie_domain": "${SAML_COOKIE_DOMAIN}",
                   "cookie_path": "${SAML_COOKIE_PATH}"
                 },

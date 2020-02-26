@@ -25,8 +25,8 @@ type SamlProviderModule struct {
 
 	MongoDb string `json:"mongo_db,omitempty"`
 
-	SessionHeaderName string `json:"session_header_name,omitempty"`
-
+	SessionHeaderName   string `json:"session_header_name,omitempty"`
+	SessionExpiryHours  string `json:"session_expiry_hours,omitempty"`
 	AudienceRestriction string `json:"audience_restriction,omitempty"`
 
 	EntityId string `json:"entityId,omitempty"`
@@ -37,12 +37,12 @@ type SamlProviderModule struct {
 
 	IdpMetaDataUrl string `json:"idp_metadata_url,omitempty"`
 
-	AssertionConsumerServiceUrl string `json:"assertion_consumer_url,omitempty"`
-	SLOConsumerServiceUrl       string `json:"slo_consumer_url,omitempty"`
+	ExternalUrl string `json:"external_url,omitempty"`
 
-	SamlLogoutUrl   string `json:"logout_url,omitempty"`
-	SamlMetadataUrl string `json:"metadata_url,omitempty"`
-
+	MetadataPath string `json:"metadata_path,omitempty"`
+	LogoutPath   string `json:"logout_path,omitempty"`
+	SLOPath      string `json:"slo_path,omitempty"`
+	SSOPath      string `json:"sso_path,omitempty"`
 	CookieDomain string `json:"cookie_domain,omitempty"`
 	CookiePath   string `json:"cookie_path,omitempty"`
 
@@ -107,15 +107,17 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 	}
 	samlProviderConfig.ServiceProviderKeystore = &keystore
 	samlProviderConfig.EntityId = m.EntityId
-	samlProviderConfig.AssertionConsumerServiceUrl = m.AssertionConsumerServiceUrl
-	samlProviderConfig.SLOConsumerServiceUrl = m.SLOConsumerServiceUrl
+	samlProviderConfig.ExternalUrl = m.ExternalUrl
 	samlProviderConfig.CookieDomain = m.CookieDomain
 	samlProviderConfig.CookiePath = m.CookiePath
 	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
 	samlProviderConfig.IdpMetaDataUrl = m.IdpMetaDataUrl
-	samlProviderConfig.SessionHeaderName = DEFAULT_VALUE_SESSION_HEADER_NAME
-	samlProviderConfig.SamlMetadataUrl = m.SamlMetadataUrl
-	samlProviderConfig.SamlLogoutUrl = m.SamlLogoutUrl
+	samlProviderConfig.SessionHeaderName = m.SessionHeaderName
+	samlProviderConfig.SamlMetadataPath = m.MetadataPath
+	samlProviderConfig.SamlLogoutPath = m.LogoutPath
+	samlProviderConfig.SamlSLOPath = m.SLOPath
+	samlProviderConfig.SamlSSOPath = m.SSOPath
+	samlProviderConfig.SessionExpiryHours = m.SessionExpiryHours
 	samlProviderConfig.Logger = m.Logger
 	m.Logger.Infof("Starting SAML provider with config: %v", samlProviderConfig)
 	m.SamlProvider, _ = gosamlserviceprovider.NewSamlServiceProviderFromConfig(samlProviderConfig, sessionCache)

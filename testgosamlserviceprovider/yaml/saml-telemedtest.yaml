@@ -39,7 +39,7 @@ spec:
             - name: SAML_CLIENT_LOGLEVEL
               value: debug
             - name: LISTEN_PORT
-              value: 8443
+              value: "8443"
             - name: MONGO_HOST
               value: mongo.default
             - name: MONGO_DATABASE
@@ -47,25 +47,29 @@ spec:
             - name: SAML_SESSION_HEADER
               value: SESSIONSAMLTEST
             - name: SAML_AUDIENCE_RESTRICTION
-              value: test
+              value: testsamlgo
             - name: SAML_IDP_METADATAURL
               value: https://telemed-medarbejderlogin-test.rm.dk/auth/realms/broker/protocol/saml/descriptor
             - name: SAML_ENTITY_ID
-              value: test
+              value: testsamlgo
             - name: SAML_SIGN_AUTH_REQUEST
-              value: false
+              value: "true"
             - name: SAML_SIGN_CERT_FILE
               value: /tls/tls.crt
             - name: SAML_SIGN_KEY_FILE
               value: /tls/tls.key
-            - name: SAML_ASSERTION_CONSUMER_URL
-              value: https://telemed-test.rm.dk/samltest/saml/SSO
-            - name: SAML_SLO_CONSUMER_URL
-              value: https://telemed-test.rm.dk/samltest/saml/SLO
-            - name: SAML_METADATA_URL
-              value: /samltest/saml/metadata
-            - name: SAML_LOGOUT_URL
-              value: /samltest/saml/logout
+            - name: SAML_SESSION_EXPIRY_HOURS
+              value: "6"
+            - name: SAML_EXTERNAL_URL
+              value: https://telemed-test.rm.dk/samltest
+            - name: SAML_SLO_PATH
+              value: /saml/SLO
+            - name: SAML_SSO_PATH
+              value: /saml/SSO
+            - name: SAML_METADATA_PATH
+              value: /saml/metadata
+            - name: SAML_LOGOUT_PATH
+              value: /saml/logout
             - name: SAML_COOKIE_PATH
               value: /samltest
             - name: SAML_COOKIE_DOMAIN
@@ -73,7 +77,7 @@ spec:
             - name: SAML_BACKEND_HOST
               value: localhost
             - name: SAML_BACKEND_PORT
-              value: 80
+              value: "80"
           image: kvalitetsit/caddysamltemplates:dev
           name: caddy-config
           volumeMounts:
@@ -83,7 +87,7 @@ spec:
         - name: tls-cert
           secret:
             defaultMode: 420
-            secretName: wsc-certs
+            secretName: samltest-certs
         - emptyDir: {}
           name: caddy-config
 ---
@@ -93,6 +97,7 @@ metadata:
   name: samltest
   namespace: gosidecars
   annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
   rules:
     - host: telemed-test.rm.dk
@@ -101,7 +106,7 @@ spec:
           - backend:
               serviceName: samltest
               servicePort: 8443
-            path: /samltest
+            path: /samltest/?(.*)
   tls:
     - hosts:
         - telemed-test.rm.dk

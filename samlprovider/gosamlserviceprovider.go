@@ -8,11 +8,10 @@ import (
 	"errors"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
+	dsig "github.com/russellhaering/goxmldsig"
 	"io/ioutil"
 	"net/http"
 	"regexp"
-
-	dsig "github.com/russellhaering/goxmldsig"
 
 	saml2 "github.com/russellhaering/gosaml2"
 	"github.com/russellhaering/gosaml2/types"
@@ -21,19 +20,23 @@ import (
 )
 
 type SamlServiceProviderConfig struct {
-	ServiceProviderKeystore     *tls.Certificate
-	EntityId                    string
-	AssertionConsumerServiceUrl string
-	SLOConsumerServiceUrl       string
-	CookieDomain                string
-	CookiePath                  string
-	AudienceRestriction         string
-	SignAuthnRequest            bool
-	IdpMetaDataUrl              string
-	SessionHeaderName           string
-	SamlLogoutUrl               string
-	SamlMetadataUrl             string
-	Logger                      *zap.SugaredLogger
+	ServiceProviderKeystore *tls.Certificate
+	EntityId                string
+	CookieDomain            string
+	CookiePath              string
+	AudienceRestriction     string
+	SignAuthnRequest        bool
+	IdpMetaDataUrl          string
+	SessionHeaderName       string
+	SessionExpiryHours      string
+
+	ExternalUrl      string
+	SamlMetadataPath string
+	SamlLogoutPath   string
+	SamlSLOPath      string
+	SamlSSOPath      string
+
+	Logger *zap.SugaredLogger
 }
 
 type SamlServiceProvider struct {
@@ -105,8 +108,8 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 		IdentityProviderSLOURL:      idpMetadata.IDPSSODescriptor.SingleLogoutServices[0].Location,
 		IdentityProviderIssuer:      idpMetadata.EntityID,
 		ServiceProviderIssuer:       config.EntityId,
-		AssertionConsumerServiceURL: config.AssertionConsumerServiceUrl,
-		ServiceProviderSLOURL:       config.SLOConsumerServiceUrl,
+		AssertionConsumerServiceURL: config.AssertionConsumerServiceUrl(),
+		ServiceProviderSLOURL:       config.SloConsumerServiceUrl(),
 		SignAuthnRequests:           config.SignAuthnRequest,
 		AudienceURI:                 config.AudienceRestriction,
 		IDPCertificateStore:         &certStore,
@@ -114,6 +117,22 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 	}
 
 	return sp, nil
+}
+
+func (config *SamlServiceProviderConfig) AssertionConsumerServiceUrl() string {
+	return buildUrl(config.ExternalUrl, config.SamlSSOPath)
+}
+
+func (config *SamlServiceProviderConfig) SloConsumerServiceUrl() string {
+	return buildUrl(config.ExternalUrl, config.SamlSLOPath)
+}
+
+func buildUrl(baseUrl string, path string) string {
+	trailingPattern := regexp.MustCompile("/$")
+	leadingPattern := regexp.MustCompile("^/?(.*)$")
+	baseUrl = trailingPattern.ReplaceAllString(baseUrl, "")
+	path = leadingPattern.ReplaceAllString(path, "/${1}")
+	return baseUrl + path
 }
 
 func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
@@ -186,6 +205,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 			}
 
 			// The session id ok ... pass-through to next handler
+			r.Header.Add(a.sessionHeaderName, sessionId)
 			return service.Handle(w, r)
 		}
 	}
