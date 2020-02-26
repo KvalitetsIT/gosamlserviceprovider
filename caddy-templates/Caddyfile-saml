@@ -2,13 +2,13 @@
   "logging": {
     "logs": {
       "default": {
-        "level": "$SAML_CLIENT_LOGLEVEL"
+        "level": "${SAML_CLIENT_LOGLEVEL}"
       }
     }
   },
 
   "admin": {
-    "listen": "localhost:2020"
+    "disabled": true
   },
   "apps": {
     "tls": {
