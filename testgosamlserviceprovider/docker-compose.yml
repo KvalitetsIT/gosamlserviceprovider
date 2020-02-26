@@ -10,8 +10,8 @@ services:
        dockerfile: Dockerfile-keycloak-resources
    mongo:
      image: mongo:3.3
-     ports:
-       - 27017:27017
+     #ports:
+     #  - 27017:27017
      networks:
        - gosamlserviceprovider
    keycloak:
@@ -23,8 +23,8 @@ services:
       - KEYCLOAK_IMPORT=/importrealms/realm-test.json
      volumes_from:
        - keycloak-resources:rw
-     ports:
-      - "8080:8080"
+     #ports:
+     # - "8080:8080"
      networks:
        - gosamlserviceprovider
    echo:

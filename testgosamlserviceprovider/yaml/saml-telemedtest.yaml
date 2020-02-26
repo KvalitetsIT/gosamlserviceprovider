@@ -17,7 +17,7 @@ spec:
       containers:
         - args:
             - -config
-            - /config/caddy.conf
+            - /config/caddy-saml.conf
           image: kvalitetsit/caddysamlprovider:dev
           name: caddy-saml-proxy
           volumeMounts:
@@ -27,15 +27,29 @@ spec:
               name: tls-cert
               readOnly: true
           ports:
-           - containerPort: 8443
-             name: https-proxy
-             protocol: TCP
+            - containerPort: 8443
+              name: https-proxy
+              protocol: TCP
+        - args:
+            - -config
+            - /config/caddy-wsc.conf
+            image: kvalitetsit/gooioidwsrest:1.1.2j
+            name: caddy-wsc
+            volumeMounts:
+              - mountPath: /config
+                name: caddy-config
+              - mountPath: /tls
+                name: tls-cert
+                readOnly: true
+              - mountPath: /sts
+                name: sts-cert-volume
+                readOnly: true
         - image: mendhak/http-https-echo
           name: demo
       initContainers:
         - env:
             - name: CADDYFILE
-              value: /config/caddy.conf
+              value: /config/caddy-wsc.conf
             - name: SAML_CLIENT_LOGLEVEL
               value: debug
             - name: LISTEN_PORT
@@ -83,6 +97,42 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: caddy-config
+        - env:
+          - name: TEMPLATE_FILE
+            value: /caddyfiletemplates/Caddyfile-wsc
+          - name: CADDYFILE
+            value: /config/caddy.conf
+          - name: LISTEN_PORT
+            value: "8383"
+          - name: MONGO_HOST
+            value: mongo.default
+          - name: MONGO_DATABASE
+            value: gosidecars_wsc
+          - name: WSC_STS_URL
+            value: https://sts.test-vdxapi.vconf.dk/sts/service/sts //TODO
+          - name: WSC_SERVICE_AUDIENCE
+            value: urn:medcom:videoapi
+          - name: WSC_CLIENT_CERTIFICATE_FILE
+            value: /tls/tls.crt
+          - name: WSC_CLIENT_KEY_FILE
+            value: /tls/tls.key
+          - name: WSC_SERVICE_ENDPOINT_HOST
+            value: wspdemo1.test01.kitkube.dk
+          - name: WSC_SERVICE_ENDPOINT_PORT
+            value: "443"
+          - name: WSC_SERVICE_ENDPOINT_CONTEXT
+          - name: WSC_SESSION_DATA_URL
+            value: http://localhost:8443/getsessiondata
+          - name: WSC_TRUST_CERT_FILES
+            value: '"/sts/tls.crt","/sts/tls.crt"'
+          - name: WSC_CLIENT_LOGLEVEL
+            value: debug
+          image: kvalitetsit/gooioidwsrest-templates:1.1.2j
+          imagePullPolicy: IfNotPresent
+          name: caddy-config
+          volumeMounts:
+            - mountPath: /config
+              name: caddy-config
       volumes:
         - name: tls-cert
           secret:
@@ -90,6 +140,94 @@ spec:
             secretName: samltest-certs
         - emptyDir: {}
           name: caddy-config
+        - name: sts-cert-volume
+          secret:
+            secretName: sts-public-cert
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/instance: gowsp
+  name: gowsp
+  namespace: gosidecars
+  spec:
+    selector:
+      matchLabels:
+        app.kubernetes.io/instance: gowsp
+    template:
+      metadata:
+        labels:
+          app.kubernetes.io/instance: gowsp
+      spec:
+        containers:
+          - args:
+              - -config
+              - /config/caddy.conf
+            image: kvalitetsit/gooioidwsrest:1.1.2j
+            name: caddy-proxy
+            ports:
+              - containerPort: 8443
+                name: https-proxy
+                protocol: TCP
+            volumeMounts:
+              - mountPath: /config
+                name: caddy-config
+              - mountPath: /tls
+                name: tls-cert
+                readOnly: true
+              - mountPath: /sts
+                name: sts-cert-volume
+                readOnly: true
+          - image: mendhak/http-https-echo:latest
+            imagePullPolicy: Always
+            name: echo
+            ports:
+              - containerPort: 80
+                name: http
+                protocol: TCP
+        initContainers:
+          - env:
+              - name: TEMPLATE_FILE
+                value: /caddyfiletemplates/Caddyfile-wsp
+              - name: CADDYFILE
+                value: /config/caddy.conf
+              - name: LISTEN_PORT
+                value: "8443"
+              - name: MONGO_HOST
+                value: mongo.default
+              - name: MONGO_DATABASE
+                value: gosidecars_wsp
+              - name: SSL_HOST_NAME
+                value: wspdemo1.test01.kitkube.dk //TODO
+              - name: WSP_SSL_CERTIFICATE_FILE
+                value: /tls/tls.crt
+              - name: WSP_SSL_KEY_FILE
+                value: /tls/tls.key
+              - name: WSP_BACKEND_HOST
+                value: localhost
+              - name: WSP_BACKEND_PORT
+                value: "80"
+              - name: WSP_AUDIENCE_RESTRICTION
+                value: urn:medcom:videoapi //TODO
+              - name: WSP_TRUST_CERT_FILES
+                value: '"/sts/tls.crt"'
+              - name: WSP_CLIENT_LOGLEVEL
+                value: debug
+            image: kvalitetsit/gooioidwsrest-templates:1.1.2j
+            name: caddy-config
+            volumeMounts:
+              - mountPath: /config
+                name: caddy-config
+        volumes:
+          - name: tls-cert
+            secret:
+              secretName: sslcert //TODO
+          - name: sts-cert-volume
+            secret:
+              secretName: sts-public-cert
+          - emptyDir: {}
+            name: caddy-config
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
