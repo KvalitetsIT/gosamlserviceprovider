@@ -33,27 +33,33 @@ spec:
         - args:
             - -config
             - /config/caddy-wsc.conf
-            image: kvalitetsit/gooioidwsrest:1.1.2j
-            name: caddy-wsc
-            volumeMounts:
-              - mountPath: /config
-                name: caddy-config
-              - mountPath: /tls
-                name: tls-cert
-                readOnly: true
-              - mountPath: /sts
-                name: sts-cert-volume
-                readOnly: true
-        - image: mendhak/http-https-echo
+          image: kvalitetsit/gooioidwsrest:1.1.2j
+          name: caddy-wsc
+          volumeMounts:
+            - mountPath: /config
+              name: caddy-config
+            - mountPath: /tls
+              name: tls-cert
+              readOnly: true
+            - mountPath: /sts
+              name: sts-cert-volume
+              readOnly: true
+        - env:
+           - name: ENDPOINTS
+             value: http://localhost:8383
+           - name: PORT
+             value: "8787"
+          image: kvalitetsit/echoconsumer:d1cbc994d4db00c89ead4d240950c2990e078f32
+          imagePullPolicy: Always
           name: demo
       initContainers:
         - env:
             - name: CADDYFILE
-              value: /config/caddy-wsc.conf
+              value: /config/caddy-saml.conf
             - name: SAML_CLIENT_LOGLEVEL
               value: debug
             - name: LISTEN_PORT
-              value: "8443"
+              value: "8383"
             - name: MONGO_HOST
               value: mongo.default
             - name: MONGO_DATABASE
@@ -101,7 +107,7 @@ spec:
           - name: TEMPLATE_FILE
             value: /caddyfiletemplates/Caddyfile-wsc
           - name: CADDYFILE
-            value: /config/caddy.conf
+            value: /config/caddy-wsc.conf
           - name: LISTEN_PORT
             value: "8383"
           - name: MONGO_HOST
