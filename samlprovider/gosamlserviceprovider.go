@@ -42,6 +42,7 @@ type SamlServiceProviderConfig struct {
 type SamlServiceProvider struct {
 	sessionCache        securityprotocol.SessionCache
 	sessionHeaderName   string
+	externalUrl         string
 	SamlServiceProvider *saml2.SAMLServiceProvider
 	SamlHandler         *SamlHandler
 	Logger              *zap.SugaredLogger
@@ -62,6 +63,7 @@ func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sess
 	s.SamlServiceProvider = samlServiceProvider
 	s.sessionCache = sessionCache
 	s.sessionHeaderName = config.SessionHeaderName
+	s.externalUrl = config.ExternalUrl
 	s.SamlHandler = NewSamlHandler(config, s)
 	s.Logger = config.Logger
 	return s
@@ -216,7 +218,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
 	a.Logger.Debugf("No Session found, redirecting to IDP")
-	relayState := r.RequestURI
+	relayState := buildUrl(a.externalUrl, r.RequestURI)
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
 	if err != nil {
 		return http.StatusInternalServerError, err
