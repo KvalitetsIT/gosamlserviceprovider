@@ -24,7 +24,8 @@ SAML_CLIENT_LOGLEVEL | The loglevel used in Caddy | info |
 LISTEN_PORT                 | The HTTP port that the Caddy proxy is bound to | -  |
 MONGO_HOST                  | Hostname for the MongoDB sessionCache | - |
 MONGO_DATABASE              | The database where sessions are cached| - |
-SAML_SESSION_HEADER | The name of the Cookie which stores the sessionID | - |
+SAML_SESSION_HEADER | The name of the Cookie and HTTP header which stores the sessionID | - |
+SAML_SESSION_EXPIRY_HOURS | The number of hours that the Session is valid. This is only used when the IDP does not provide expiry on the Saml assertion| - |
 SAML_AUDIENCE_RESTRICTION | The audience for the SAML protocol | - | 
 SAML_IDP_METADATAURL | The URL where SAML metadata can be downloaded from the IDP | - |
 SAML_ENTITY_ID | The SAML entityID | - |
@@ -35,8 +36,10 @@ SAML_ASSERTION_CONSUMER_URL |  The callback URL to use IDP login callbacks, must
 SAML_SLO_CONSUMER_URL | The callback URL to use for IDP Logout callbacks, must be a fully qualified URL | - |
 SAML_COOKIE_PATH | The path where the session cookie will be valid | - |
 SAML_COOKIE_DOMAIN | The domain where the session will be valid | - |
-SAML_CALLBACK_URL | The SAML URL to use for login callbacks | /saml/SSO |
-SAML_METADATA_URL | The path where SAML metadata are provided | /saml/metadata |
-SAML_LOGOUT_URL | The path where SAML logout is initiaed | /saml/logout | 
+SAML_EXTERNAL_URL | The external URL where the IDP will do callbacks to the service | - | 
+SAML_SSO_PATH | The SAML URL to use for login callbacks | /saml/SSO |
+SAML_METADATA_PATH | The path where SAML metadata are provided | /saml/metadata |
+SAML_LOGOUT_PATH | The path where SAML logout is initiated | /saml/logout | 
+SAML_SLO_PATH | The path where the IDP should sent LogoutResponse | /saml/SLO | 
 SAML_BACKEND_HOST | The hostname for the backend service| - |
 SAML_BACKEND_PORT | The portname for the backend service | - | 
