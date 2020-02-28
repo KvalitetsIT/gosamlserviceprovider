@@ -1,6 +1,7 @@
 package prometheus
 
 import (
+	"fmt"
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
@@ -98,7 +99,9 @@ func (m *PrometheusModule) Provision(ctx caddy.Context) error {
 // Validate implements caddy.Validator.
 func (m *PrometheusModule) Validate() error {
 	m.Logger.Info("Validating module")
-	//TODO validation of all required elements
+	if len(m.MetricsPath) == 0 {
+		return fmt.Errorf("metrics_path must be configured")
+	}
 	return nil
 }
 

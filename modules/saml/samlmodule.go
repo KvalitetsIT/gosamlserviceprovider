@@ -135,7 +135,6 @@ func (m *SamlProviderModule) Validate() error {
 		return fmt.Errorf("mongo_db must be configured")
 	}
 
-	//TODO validation of all required elements
 	return nil
 }
 
