@@ -5,12 +5,12 @@ go 1.13.4
 require (
 	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a
 	github.com/Masterminds/sprig/v3 v3.0.2 // indirect
+	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190808125512-07798873deee
 	github.com/andybalholm/brotli v1.0.0 // indirect
 	github.com/caddyserver/caddy/v2 v2.0.0-beta9
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.3.3 // indirect
-	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/huandu/xstrings v1.3.0 // indirect
 	github.com/klauspost/compress v1.10.1 // indirect
@@ -23,6 +23,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus/client_golang v1.4.1
 	github.com/russellhaering/gosaml2 v0.4.0
 	github.com/russellhaering/goxmldsig v0.0.0-20180430223755-7acd5e4a6ef7
 	github.com/spf13/cast v1.3.1 // indirect
@@ -40,4 +41,10 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
+replace github.com/caddyserver/caddy/v2 => github.com/KvalitetsIT/caddy/v2 v2.0.0-beta9.0.20191202222324-af18d1a7d058
+
 replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig v0.0.0-20190907195011-53d9398322c5
+
+replace github.com/marten-seemann/qtls => github.com/marten-seemann/qtls v0.4.1
+
+replace github.com/golang/groupcache => github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc

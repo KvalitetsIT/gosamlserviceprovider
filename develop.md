@@ -22,8 +22,7 @@ There is a docker-compose setup, that contains a IDP (keycloak) a backend servic
 
 After this has been setup the module can be build using:
 ```
-docker build  -t kvalitetsit/gosamlserviceprovider --network testgosamlserviceprovider_gosamlserviceprovider .
-docker build  -t kvalitetsit/caddysamlprovider  -f Dockerfile-caddy .
+docker build  -t kvalitetsit/caddysamlprovider --network testgosamlserviceprovider_gosamlserviceprovider .
 docker build  -t kvalitetsit/caddysamltemplates  -f Dockerfile-caddytemplates .
 ```
 Finally the caddy server with the SAML module can be started using:

@@ -4,7 +4,7 @@ networks:
     driver: bridge
 services:
    caddy-resources:
-     image: build-samlmodule-resources/caddy
+     image: build-saml-resources/caddy
      build:
        context: .
        dockerfile: Dockerfile-resources-caddytest

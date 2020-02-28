@@ -4,4 +4,5 @@ COPY ./caddy-templates/Caddyfile-saml /caddyfiletemplates/Caddyfile-saml
 ENV SAML_CLIENT_LOGLEVEL info
 ENV TEMPLATE_FILE /caddyfiletemplates/Caddyfile-saml
 ENV CADDYFILE /config
+RUN cat /caddyfiletemplates/Caddyfile-saml
 ENTRYPOINT envsubst < ${TEMPLATE_FILE} > ${CADDYFILE}

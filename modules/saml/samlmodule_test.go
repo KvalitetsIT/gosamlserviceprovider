@@ -1,4 +1,4 @@
-package samlmodule
+package saml
 
 import (
 	"testing"

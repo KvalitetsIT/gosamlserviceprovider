@@ -1,4 +1,4 @@
-package samlmodule
+package prometheus
 
 import "github.com/caddyserver/caddy/v2/modules/caddyhttp"
 import "net/http"

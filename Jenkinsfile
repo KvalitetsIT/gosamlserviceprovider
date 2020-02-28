@@ -31,17 +31,10 @@ pipeline {
 		stage('Build Docker image (gosamlprovider module)') {
 			steps {
 				script {
-					docker.build("kvalitetsit/gosamlserviceprovider", "--network testgosamlserviceprovider_gosamlserviceprovider .")
+					docker.build("kvalitetsit/caddysamlprovider", "--network testgosamlserviceprovider_gosamlserviceprovider .")
 				}
 			}
 		}
-        stage('Build Docker image (caddy module)') {
-            steps {
-               script {
-                  docker.build("kvalitetsit/caddysamlprovider", "-f Dockerfile-caddy .")
-               }
-            }
-        }
         stage('Build Docker image (caddy templates)') {
             steps {
                script {

@@ -30,6 +30,10 @@
               ],
               "handle": [
                 {
+                  "handler": "prometheus",
+                  "metrics_path": "/metrics"
+                },
+                {
                   "handler": "samlprovider",
                   "session_header_name": "${SAML_SESSION_HEADER}",
                   "session_expiry_hours": "${SAML_SESSION_EXPIRY_HOURS}",

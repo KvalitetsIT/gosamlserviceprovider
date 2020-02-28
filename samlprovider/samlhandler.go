@@ -1,4 +1,4 @@
-package gosamlserviceprovider
+package samlprovider
 
 import (
 	"encoding/xml"

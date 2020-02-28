@@ -1,4 +1,4 @@
-package gosamlserviceprovider
+package samlprovider
 
 import (
 	"github.com/google/uuid"
