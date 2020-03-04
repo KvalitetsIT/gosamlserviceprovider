@@ -5,7 +5,6 @@ go 1.13.4
 require (
 	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a
 	github.com/Masterminds/sprig/v3 v3.0.2 // indirect
-	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190808125512-07798873deee
 	github.com/andybalholm/brotli v1.0.0 // indirect
 	github.com/caddyserver/caddy/v2 v2.0.0-beta9
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
@@ -24,6 +23,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.4.1
+	github.com/prometheus/client_model v0.2.0
 	github.com/russellhaering/gosaml2 v0.4.0
 	github.com/russellhaering/goxmldsig v0.0.0-20180430223755-7acd5e4a6ef7
 	github.com/spf13/cast v1.3.1 // indirect

@@ -15,7 +15,7 @@ docker-compose -f testgosamlserviceprovider/docker-compose-caddy-dev.yml build
 docker-compose -f testgosamlserviceprovider/docker-compose-caddy-dev.yml up
 ```
 
-If you want to run the test from your IDE are command prompt, you to add the following to your hosts file: 
+If you want to run the test from your IDE or command prompt, you to add the following to your hosts file: 
 ```
 127.0.0.1 keycloak
 127.0.0.1 mongo

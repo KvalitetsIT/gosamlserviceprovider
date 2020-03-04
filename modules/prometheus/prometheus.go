@@ -74,6 +74,17 @@ func (PrometheusModule) CaddyModule() caddy.ModuleInfo {
 func (m *PrometheusModule) Provision(ctx caddy.Context) error {
 	m.Logger = ctx.Logger(m).Sugar()
 	//TODO read these from configuration
+	m.SetupMetrics()
+
+	m.MetricsHandler = promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		ErrorHandling: promhttp.HTTPErrorOnError,
+		ErrorLog:      NewErrorLogger(m.Logger),
+	})
+
+	return nil
+}
+
+func (m *PrometheusModule) SetupMetrics() {
 	m.labels = []string{"host", "protocol", "method", "path", "status"}
 	requestCount = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "requests_count",
@@ -87,13 +98,6 @@ func (m *PrometheusModule) Provision(ctx caddy.Context) error {
 
 	prometheus.MustRegister(requestCount)
 	prometheus.MustRegister(responseLatency)
-
-	m.MetricsHandler = promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
-		ErrorHandling: promhttp.HTTPErrorOnError,
-		ErrorLog:      NewErrorLogger(m.Logger),
-	})
-
-	return nil
 }
 
 // Validate implements caddy.Validator.

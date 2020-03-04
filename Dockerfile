@@ -1,5 +1,3 @@
-FROM kit/git as sshsecret
-
 FROM golang:1.13.4 as builder
 ENV GO111MODULE=on
 
