@@ -41,7 +41,7 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
-replace github.com/caddyserver/caddy/v2 => github.com/KvalitetsIT/caddy/v2 v2.0.0-beta9.0.20191202222324-af18d1a7d058
+replace github.com/caddyserver/caddy/v2 => github.com/KvalitetsIT/caddy/v2 v2.0.0-20191207064707-edf22def147c
 
 replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig v0.0.0-20190907195011-53d9398322c5
 
