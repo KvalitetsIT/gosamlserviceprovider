@@ -11,7 +11,8 @@ COPY samlprovider /gosamlserviceprovider/samlprovider
 COPY modules /gosamlserviceprovider/modules
 COPY caddy /gosamlserviceprovider/caddy
 COPY main.go main.go
-RUN go test -v ./...
+RUN go test -coverprofile=coverage.out -v ./...
+RUN go tool cover -func=coverage.out
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/gosamlserviceprovider .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/caddy ./caddy
