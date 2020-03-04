@@ -1,21 +1,5 @@
 # Developer guide
 
-## Using Go private modules
-This repository uses a private GO module, to download this set the following Env:
-```
-export GOPRIVATE="github.com/KvalitetsIT/gosecurityprotocol"
-```
-and add this in your git config
-```
-[url "ssh://git@github.com/"]
-	insteadOf = https://github.com/
-```
-Now you should be able to go mod download
-
-
-
-
-
 ## Start testing environment
 There is a docker-compose setup, that contains a IDP (keycloak) a backend service and a mongo for session caching.
 ```docker-compose -f testgosamlserviceprovider/docker-compose-dev.yml up -d```
