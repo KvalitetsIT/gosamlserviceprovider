@@ -32,6 +32,8 @@ github.com/KvalitetsIT/caddy/v2 v2.0.0-20191207064707-edf22def147c h1:e0KpuPXLct
 github.com/KvalitetsIT/caddy/v2 v2.0.0-20191207064707-edf22def147c/go.mod h1:7yhgu9cBT/7SodBYbvrVoPscFuhZ6Oyj4+QsBjpyXJE=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a h1:YUYvrlYBNKwwlYgtpBRRJhrwreXx2gfG+vtBNnKNbSk=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a/go.mod h1:af3uGIwL7HUcV3oofY3AMUSdSRGbzCwyDCCDBLvH4cI=
+github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4 h1:Ry3KOYV8Encjz4FJDTzQCE0g/x0kI+yWKDT27038fR8=
+github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4/go.mod h1:hNYiXXlhlAyzUdU5WIisIDKk4hWChmn3qS1srlB1sl4=
 github.com/Masterminds/goutils v1.1.0 h1:zukEsf/1JZwCMgHiK3GZftabmxiCw4apj3a28RPBiVg=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
 github.com/Masterminds/semver/v3 v3.0.1 h1:2kKm5lb7dKVrt5TYUiAavE6oFc1cFT0057UVGT+JqLk=
@@ -324,6 +326,7 @@ github.com/rainycape/memcache v0.0.0-20150622160815-1031fa0ce2f2/go.mod h1:7tZKc
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
+github.com/russellhaering/gosaml2 v0.3.1/go.mod h1:niieRtQaw+opTVp9jzZo1nAAoksI2eNpd+weDcjZ+Mk=
 github.com/russellhaering/gosaml2 v0.4.0 h1:WA1PoM1miFsQnhlvXmQStWFltzJiB+vGCSzLYECYDTI=
 github.com/russellhaering/gosaml2 v0.4.0/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
 github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0RK8m9o+Q=

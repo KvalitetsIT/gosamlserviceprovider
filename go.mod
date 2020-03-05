@@ -3,7 +3,7 @@ module gosamlserviceprovider
 go 1.13.4
 
 require (
-	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a
+	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4
 	github.com/Masterminds/sprig/v3 v3.0.2 // indirect
 	github.com/andybalholm/brotli v1.0.0 // indirect
 	github.com/caddyserver/caddy/v2 v2.0.0-beta9
@@ -36,7 +36,6 @@ require (
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/sys v0.0.0-20200219091948-cb0a6d8edb6c // indirect
 	golang.org/x/tools v0.0.0-20200219054238-753a1d49df85 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/square/go-jose.v2 v2.4.1 // indirect
 	gotest.tools v2.2.0+incompatible
 )

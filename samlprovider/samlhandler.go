@@ -186,7 +186,8 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusBadRequest, nil
 	}
 
-	assertionInfo, err := handler.provider.SamlServiceProvider.RetrieveAssertionInfo(r.FormValue("SAMLResponse"))
+	samlResponse := r.FormValue("SAMLResponse")
+	assertionInfo, err := handler.provider.SamlServiceProvider.RetrieveAssertionInfo(samlResponse)
 	if err != nil {
 		handler.Logger.Warnf("Invalid assertions: %v", err)
 		fmt.Fprintf(w, "Invalid assertions: %s", err.Error())
