@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 
 	saml2 "github.com/russellhaering/gosaml2"
 	"github.com/russellhaering/gosaml2/types"
@@ -160,6 +161,9 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 
 func (config *SamlServiceProviderConfig) fixMetadata(bodyBytes []byte) ([]byte, error) {
 	idpMetadata := string(bodyBytes)
+	if !strings.Contains(idpMetadata, "EntitiesDescriptor") {
+		return bodyBytes, nil
+	}
 	// read namespace from EntitiesDescriptor
 	// array of namespaces
 	xmlnsArray := regexp.MustCompile("xmlns(:[^=]*)?=\"([^\"])*\"").FindAllString(idpMetadata, -1)

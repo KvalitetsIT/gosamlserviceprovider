@@ -47,8 +47,9 @@ func TestBuildUrl(t *testing.T) {
 func TestVenligLoginMetadata(t *testing.T) {
 	config := &SamlServiceProviderConfig{}
 	config.Logger = zap.NewNop().Sugar()
-	bytes, _ := ioutil.ReadFile("./testdata/saml-assertion-multiple-roles.xml")
-	config.fixMetadata(bytes)
+	bytes, _ := ioutil.ReadFile("./testdata/venligdata.xml")
+	metadata, _ := config.fixMetadata(bytes)
+	assert.Equal(t, string(bytes), string(metadata))
 }
 
 func samlMetadata(t *testing.T) {
