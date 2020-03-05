@@ -44,6 +44,13 @@ func TestBuildUrl(t *testing.T) {
 	assert.Equal(t, "http://localhost:665/test/saml/sso", buildUrl("http://localhost:665/test/", "saml/sso"))
 }
 
+func TestVenligLoginMetadata(t *testing.T) {
+	config := &SamlServiceProviderConfig{}
+	config.Logger = zap.NewNop().Sugar()
+	bytes, _ := ioutil.ReadFile("./testdata/saml-assertion-multiple-roles.xml")
+	config.fixMetadata(bytes)
+}
+
 func samlMetadata(t *testing.T) {
 	httpClient := httpServer.Client()
 	metadataRequest, _ := http.NewRequest("GET", "http://localhost:8787/saml/metadata", nil)

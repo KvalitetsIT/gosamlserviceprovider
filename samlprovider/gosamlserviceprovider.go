@@ -155,10 +155,10 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 		config.Logger.Errorf("Cannot download metadata: %v", err)
 		return nil, err
 	}
-	return fixMetadata(bodyBytes)
+	return config.fixMetadata(bodyBytes)
 }
 
-func fixMetadata(bodyBytes []byte) ([]byte, error) {
+func (config *SamlServiceProviderConfig) fixMetadata(bodyBytes []byte) ([]byte, error) {
 	idpMetadata := string(bodyBytes)
 	// read namespace from EntitiesDescriptor
 	// array of namespaces
@@ -169,10 +169,10 @@ func fixMetadata(bodyBytes []byte) ([]byte, error) {
 	}
 	// insert namespaces to EntityDescriptor
 	// select the entire EntityDescriptor section
-	xmlEntityDescriptor := regexp.MustCompile("<EntityDescriptor(.|\n)*EntityDescriptor>").FindString(idpMetadata)
+	xmlEntityDescriptor := regexp.MustCompile("<(.*:)?EntityDescriptor(.|\n)*EntityDescriptor>").FindString(idpMetadata)
 	// inserts the namespace
-	replacePattern := regexp.MustCompile("<EntityDescriptor ")
-	xmlEntityDescriptor = replacePattern.ReplaceAllLiteralString(xmlEntityDescriptor, "<EntityDescriptor "+xmlnsString)
+	replacePattern := regexp.MustCompile("<(.*:)?EntityDescriptor ")
+	xmlEntityDescriptor = replacePattern.ReplaceAllString(xmlEntityDescriptor, "<${1}EntityDescriptor "+xmlnsString)
 	return []byte(xmlEntityDescriptor), nil
 }
 
