@@ -6,6 +6,7 @@ require (
 	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4
 	github.com/Masterminds/sprig/v3 v3.0.2 // indirect
 	github.com/andybalholm/brotli v1.0.0 // indirect
+	github.com/beevik/etree v1.1.0
 	github.com/caddyserver/caddy/v2 v2.0.0-beta9
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
@@ -43,6 +44,8 @@ require (
 replace github.com/caddyserver/caddy/v2 => github.com/KvalitetsIT/caddy/v2 v2.0.0-20191207064707-edf22def147c
 
 replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig v0.0.0-20190907195011-53d9398322c5
+
+replace github.com/russellhaering/gosaml2 => github.com/KvalitetsIT/gosaml2 v0.0.0-20200306141034-09d1e546a98a
 
 replace github.com/marten-seemann/qtls => github.com/marten-seemann/qtls v0.4.1
 

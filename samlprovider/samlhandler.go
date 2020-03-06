@@ -4,11 +4,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
+	"github.com/beevik/etree"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -205,14 +205,12 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusForbidden, nil
 	}
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
-	assertionXml, _ := xml.Marshal(assertionInfo.Assertions[0])
-	assertionXmlString := string(assertionXml)
-	xs := "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\""
-	xsi := "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
-	replacePattern := regexp.MustCompile("(<Assertion xmlns=\"[^\"]*\")")
-	assertionXmlString = replacePattern.ReplaceAllString(assertionXmlString, "${1} "+xs+" "+xsi+" ")
-
-	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(), assertionXmlString)
+	response, _ := handler.provider.SamlServiceProvider.ValidateEncodedResponse(samlResponse)
+	document := etree.NewDocument()
+	document.SetRoot(response.Document.FindElements("//Assertion")[0])
+	assertionXml, _ := document.WriteToString()
+	//handler.provider.SamlServiceProvider.
+	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(), string(assertionXml))
 	if err != nil {
 		handler.Logger.Warnf("Error creating sessionData: %v", err)
 		fmt.Println("Error creating sessionData: " + err.Error())
