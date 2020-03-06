@@ -172,7 +172,7 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 }
 
 func (handler *SamlHandler) handleMetadata(w http.ResponseWriter, r *http.Request) (int, error) {
-	spMetadata, _ := handler.provider.SamlServiceProvider.MetadataWithSLO(24)
+	spMetadata, _ := handler.provider.Metadata()
 	spMetadataXml, _ := xml.MarshalIndent(spMetadata, "", "  ")
 	w.Write(spMetadataXml)
 	return http.StatusOK, nil
@@ -218,7 +218,6 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		fmt.Println("Error creating sessionData: " + err.Error())
 		return http.StatusBadRequest, nil
 	}
-	//TODO shouldn't these be saved in the SAMLSessionDataCreator module??
 	handler.Logger.Debugf("Adding NameID and SessionIndex to session data")
 	sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
 	sessionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex

@@ -229,3 +229,15 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 	}
 	return http.StatusFound, nil
 }
+
+func (provider *SamlServiceProvider) Metadata() (*types.EntityDescriptor, error) {
+	spMetadata, err := provider.SamlServiceProvider.Metadata()
+	if err != nil {
+		return spMetadata, err
+	}
+	spMetadata.SPSSODescriptor.SingleLogoutServices = []types.Endpoint{{
+		Binding:  saml2.BindingHttpPost,
+		Location: provider.SamlServiceProvider.ServiceProviderSLOURL,
+	}}
+	return spMetadata, nil
+}

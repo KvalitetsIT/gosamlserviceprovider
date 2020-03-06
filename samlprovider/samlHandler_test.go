@@ -1,9 +1,12 @@
 package samlprovider
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/xml"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"github.com/google/uuid"
+	"github.com/russellhaering/gosaml2/types"
 	"go.uber.org/zap"
 	"gotest.tools/assert"
 	"net/http"
@@ -21,6 +24,7 @@ func TestSamlHandler(t *testing.T) {
 	t.Run("Test GetSessionId", testGetSessionId)
 	t.Run("Test HandleSamlResponse invalid time", testHandleSamlLoginResponse_invalidTime)
 	t.Run("Test HandleSamlResponse no saml response provided", testHandleSamlLoginResponse_noSamlResponse)
+	t.Run("Test SAML metadata without SLO", testMetadata)
 }
 
 func setup() {
@@ -45,6 +49,26 @@ func setup() {
 	samlServiceProvider, _ := NewSamlServiceProviderFromConfig(c, sessionCache)
 
 	samlHandler = NewSamlHandler(c, samlServiceProvider)
+}
+
+func testMetadata(t *testing.T) {
+	r := &http.Request{}
+	r.Method = http.MethodGet
+	url, _ := url.Parse("https://test.localhost/saml/metadata.xml")
+	r.URL = url
+	w := MockResponseWriter{}
+	w.buffer = &bytes.Buffer{}
+	_, err := samlHandler.handleMetadata(w, r)
+	assert.NilError(t, err)
+	entityDescriptor := &types.EntityDescriptor{}
+	err = xml.Unmarshal(w.buffer.Bytes(), entityDescriptor)
+	assert.NilError(t, err)
+	assert.Equal(t, entityDescriptor.EntityID, "test")
+	assert.Equal(t, len(entityDescriptor.SPSSODescriptor.SingleLogoutServices), 1)
+	assert.Equal(t, entityDescriptor.SPSSODescriptor.SingleLogoutServices[0].Location, samlHandler.provider.SamlServiceProvider.ServiceProviderSLOURL)
+	assert.Equal(t, len(entityDescriptor.SPSSODescriptor.AssertionConsumerServices), 1)
+	assert.Equal(t, entityDescriptor.SPSSODescriptor.AssertionConsumerServices[0].Location, samlHandler.provider.SamlServiceProvider.AssertionConsumerServiceURL)
+
 }
 
 func testGetSessionId(t *testing.T) {
@@ -99,6 +123,7 @@ func testHandleSamlLoginResponse_noSamlResponse(t *testing.T) {
 //Utils
 type MockResponseWriter struct {
 	statusCode int
+	buffer     *bytes.Buffer
 	headers    http.Header
 }
 
@@ -106,10 +131,13 @@ func (w MockResponseWriter) Header() http.Header {
 	return w.headers
 }
 
-func (w MockResponseWriter) Write([]byte) (int, error) {
+func (w MockResponseWriter) Write(b []byte) (int, error) {
+	if w.buffer != nil {
+		return w.buffer.Write(b)
+	}
 	return 0, nil
 }
 
 func (w MockResponseWriter) WriteHeader(statusCode int) {
-
+	w.statusCode = statusCode
 }
