@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -205,7 +206,13 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	}
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
 	assertionXml, _ := xml.Marshal(assertionInfo.Assertions[0])
-	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(), string(assertionXml))
+	assertionXmlString := string(assertionXml)
+	xs := "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\""
+	xsi := "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
+	replacePattern := regexp.MustCompile("(<Assertion xmlns=\"[^\"]*\")")
+	assertionXmlString = replacePattern.ReplaceAllString(assertionXmlString, "${1} "+xs+" "+xsi+" ")
+
+	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(), assertionXmlString)
 	if err != nil {
 		handler.Logger.Warnf("Error creating sessionData: %v", err)
 		fmt.Println("Error creating sessionData: " + err.Error())

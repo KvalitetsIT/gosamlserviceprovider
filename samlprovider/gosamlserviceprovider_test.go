@@ -48,7 +48,7 @@ func TestVenligLoginMetadata(t *testing.T) {
 	config := &SamlServiceProviderConfig{}
 	config.Logger = zap.NewNop().Sugar()
 	bytes, _ := ioutil.ReadFile("./testdata/venligdata.xml")
-	metadata, _ := config.fixMetadata(bytes)
+	metadata, _ := EntityDescriptor(bytes)
 	assert.Equal(t, string(bytes), string(metadata))
 }
 

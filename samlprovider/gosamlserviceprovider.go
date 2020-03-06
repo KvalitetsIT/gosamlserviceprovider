@@ -8,14 +8,12 @@ import (
 	"errors"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
+	saml2 "github.com/russellhaering/gosaml2"
+	"github.com/russellhaering/gosaml2/types"
 	dsig "github.com/russellhaering/goxmldsig"
 	"io/ioutil"
 	"net/http"
 	"regexp"
-	"strings"
-
-	saml2 "github.com/russellhaering/gosaml2"
-	"github.com/russellhaering/gosaml2/types"
 
 	"go.uber.org/zap"
 )
@@ -156,28 +154,7 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 		config.Logger.Errorf("Cannot download metadata: %v", err)
 		return nil, err
 	}
-	return config.fixMetadata(bodyBytes)
-}
-
-func (config *SamlServiceProviderConfig) fixMetadata(bodyBytes []byte) ([]byte, error) {
-	idpMetadata := string(bodyBytes)
-	if !strings.Contains(idpMetadata, "EntitiesDescriptor") {
-		return bodyBytes, nil
-	}
-	// read namespace from EntitiesDescriptor
-	// array of namespaces
-	xmlnsArray := regexp.MustCompile("xmlns(:[^=]*)?=\"([^\"])*\"").FindAllString(idpMetadata, -1)
-	xmlnsString := ""
-	for _, v := range xmlnsArray {
-		xmlnsString = xmlnsString + v + " "
-	}
-	// insert namespaces to EntityDescriptor
-	// select the entire EntityDescriptor section
-	xmlEntityDescriptor := regexp.MustCompile("<(.*:)?EntityDescriptor(.|\n)*EntityDescriptor>").FindString(idpMetadata)
-	// inserts the namespace
-	replacePattern := regexp.MustCompile("<(.*:)?EntityDescriptor ")
-	xmlEntityDescriptor = replacePattern.ReplaceAllString(xmlEntityDescriptor, "<${1}EntityDescriptor "+xmlnsString)
-	return []byte(xmlEntityDescriptor), nil
+	return EntityDescriptor(bodyBytes)
 }
 
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
