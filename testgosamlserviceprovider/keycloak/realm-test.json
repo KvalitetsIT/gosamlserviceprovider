@@ -96,7 +96,7 @@
       "frontchannelLogout": true,
       "protocol": "saml",
       "attributes": {
-        "saml.assertion.signature": "false",
+        "saml.assertion.signature": "true",
         "saml.force.post.binding": "true",
         "saml.multivalued.roles": "false",
         "saml.encrypt": "false",
