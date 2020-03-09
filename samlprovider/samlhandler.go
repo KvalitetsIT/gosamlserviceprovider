@@ -196,7 +196,10 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusForbidden, nil
 	}
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
-	response, _ := handler.provider.SamlServiceProvider.ValidateEncodedResponse(samlResponse)
+	response, err := handler.provider.SamlServiceProvider.ValidateEncodedResponse(samlResponse)
+	if err != nil {
+		handler.Logger.Errorf("Cannot decode SAML response: %v",err)
+	}
 	document := etree.NewDocument()
 	responseStr,_ := response.Document.WriteToString()
 	handler.Logger.Debugf("Raw samlresponse: %v", responseStr)
