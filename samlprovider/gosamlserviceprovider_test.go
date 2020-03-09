@@ -33,7 +33,7 @@ func TestSaml(t *testing.T) {
 	t.Run("Test Loginflow with sessionId Cookie doesn't trigger login", valid_SessionId_Cookie)
 	t.Run("Test Loginflow with sessionId Header doesn't trigger login", valid_SessionId_Header)
 	t.Run("Test LoginFlow with invalid sessionId", invalid_SessionId_TriggersLogin)
-	t.Run("Test Logputflow", logoutFlow_Basic)
+	t.Run("Test Logoutflow", logoutFlow_Basic)
 	httpServer.Close()
 }
 
