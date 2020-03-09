@@ -210,7 +210,7 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	document.SetRoot(response.Document.FindElements("//Assertion")[0])
 	assertionXml, _ := document.WriteToString()
 	//handler.provider.SamlServiceProvider.
-	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithId(uuid.New().String(), string(assertionXml))
+	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithAssertionAndClientCert(uuid.New().String(), assertionXml, &assertionInfo.Assertions[0], "")
 	if err != nil {
 		handler.Logger.Warnf("Error creating sessionData: %v", err)
 		fmt.Println("Error creating sessionData: " + err.Error())
