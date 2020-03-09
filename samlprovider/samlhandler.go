@@ -198,7 +198,8 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
 	response, _ := handler.provider.SamlServiceProvider.ValidateEncodedResponse(samlResponse)
 	document := etree.NewDocument()
-	handler.Logger.Debugf("Raw samlresponse: %v", response.Document.WriteToString())
+	responseStr,_ := response.Document.WriteToString()
+	handler.Logger.Debugf("Raw samlresponse: %v", responseStr)
 	document.SetRoot(response.Document.FindElements("//Assertion")[0])
 	assertionXml, _ := document.WriteToString()
 	//handler.provider.SamlServiceProvider.
