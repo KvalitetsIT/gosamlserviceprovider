@@ -23,6 +23,7 @@ var (
 	service             securityprotocol.HttpHandler
 	validSessionId      string
 	samlServiceProvider *SamlServiceProvider
+	loggedInCookieJar   *cookiejar.Jar
 )
 
 func TestSaml(t *testing.T) {
@@ -32,8 +33,7 @@ func TestSaml(t *testing.T) {
 	t.Run("Test Loginflow with sessionId Cookie doesn't trigger login", valid_SessionId_Cookie)
 	t.Run("Test Loginflow with sessionId Header doesn't trigger login", valid_SessionId_Header)
 	t.Run("Test LoginFlow with invalid sessionId", invalid_SessionId_TriggersLogin)
-
-	//TODO test logout flow
+	t.Run("Test Logputflow", logoutFlow_Basic)
 	httpServer.Close()
 }
 
@@ -94,6 +94,20 @@ func loginFlow_Basic(t *testing.T) {
 	validSessionId = sessionCookie.Value
 	assert.Equal(t, http.StatusTeapot, callbackResponse.StatusCode)
 	assert.Equal(t, requestedPath, callbackResponse.Request.URL.Path+"?"+callbackResponse.Request.URL.RawQuery)
+	loggedInCookieJar = cookieJar
+}
+
+func logoutFlow_Basic(t *testing.T) {
+	httpClient := httpServer.Client()
+	httpClient.Jar = loggedInCookieJar
+	//Now do the logout
+	logoutUrl, _ := url.Parse("http://localhost:8787/saml/logout")
+	logoutRequest, _ := http.NewRequest("GET", logoutUrl.String(), nil)
+
+	response, err := httpClient.Do(logoutRequest)
+	assert.NilError(t, err)
+	assert.Equal(t, response.StatusCode, http.StatusOK)
+	assert.Equal(t, len(httpClient.Jar.Cookies(logoutUrl)), 0)
 }
 
 /**
@@ -269,7 +283,7 @@ func createConfig() *SamlServiceProviderConfig {
 	c.SamlSLOPath = "/saml/SLO"
 	c.SamlSSOPath = "/saml/SSO"
 	c.SessionHeaderName = "MySessionCookie"
-	c.CookieDomain = ""
+	c.CookieDomain = "localhost:8787"
 	c.CookiePath = "/"
 	return c
 }
@@ -309,7 +323,7 @@ func setupSamlServiceProvider(config *SamlServiceProviderConfig, sessionCache se
 
 func createTlsServer(handlerFunc func(http.ResponseWriter, *http.Request)) *httptest.Server {
 
-	l, err := net.Listen("tcp", "127.0.0.1:8787")
+	l, err := net.Listen("tcp", "localhost:8787")
 	handleError(err)
 
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(handlerFunc))

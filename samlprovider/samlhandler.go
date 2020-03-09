@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -45,14 +44,6 @@ func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProv
 	s.provider = provider
 	s.Logger = config.Logger
 	return s
-}
-
-func getUrlPath(urlString string) (string, error) {
-	parsedUrl, err := url.Parse(urlString)
-	if err != nil {
-		return "", err
-	}
-	return parsedUrl.Path, nil
 }
 
 func (handler *SamlHandler) isSamlProtocol(r *http.Request) bool {
