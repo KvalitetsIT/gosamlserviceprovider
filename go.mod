@@ -45,7 +45,7 @@ replace github.com/caddyserver/caddy/v2 => github.com/KvalitetsIT/caddy/v2 v2.0.
 
 replace github.com/russellhaering/goxmldsig => github.com/evtr/goxmldsig v0.0.0-20190907195011-53d9398322c5
 
-replace github.com/russellhaering/gosaml2 => github.com/KvalitetsIT/gosaml2 v0.0.0-20200309122911-d95298edaa97
+replace github.com/russellhaering/gosaml2 => github.com/KvalitetsIT/gosaml2 v0.0.0-20200311115749-13fe093be2ad
 
 replace github.com/marten-seemann/qtls => github.com/marten-seemann/qtls v0.4.1
 
