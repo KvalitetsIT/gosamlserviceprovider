@@ -13,6 +13,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -83,9 +84,9 @@ func loginFlow_Basic(t *testing.T) {
 	loginResponse := createLoginRequest(httpClient, res, "eva", "kuk")
 	assert.Equal(t, http.StatusOK, loginResponse.StatusCode)
 	loginResponseBody, _ := ioutil.ReadAll(loginResponse.Body)
-	samlResponse := extractString(string(loginResponseBody), "name=\"SAMLResponse\" value=\"", "\"/>")
-	relayState := extractString(string(loginResponseBody), "name=\"RelayState\" value=\"", "\"/>")
-	callbackURL := extractString(string(loginResponseBody), "action=\"", "\">")
+	samlResponse := extractValue(string(loginResponseBody), "samlresponse")
+	relayState := extractValue(string(loginResponseBody), "RelayState")
+	callbackURL := extractAction(string(loginResponseBody), "action")
 	callbackResponse := doCallback(httpClient, samlResponse, relayState, callbackURL, loginResponse)
 	//After the callback, login should be succesful,
 	//and we should get the Teapot status code from the backend service
@@ -142,9 +143,9 @@ func invalid_SessionId_TriggersLogin(t *testing.T) {
 	loginResponse := createLoginRequest(httpClient, res, "eva", "kuk")
 	assert.Equal(t, http.StatusOK, loginResponse.StatusCode)
 	loginResponseBody, _ := ioutil.ReadAll(loginResponse.Body)
-	samlResponse := extractString(string(loginResponseBody), "name=\"SAMLResponse\" value=\"", "\"/>")
-	relayState := extractString(string(loginResponseBody), "name=\"RelayState\" value=\"", "\"/>")
-	callbackURL := extractString(string(loginResponseBody), "action=\"", "\">")
+	samlResponse := extractValue(string(loginResponseBody), "SAMLResponse")
+	relayState := extractValue(string(loginResponseBody), "RelayState")
+	callbackURL := extractAction(string(loginResponseBody), "action")
 	callbackResponse := doCallback(httpClient, samlResponse, relayState, callbackURL, loginResponse)
 	//After the callback, login should be succesful,
 	//and we should get the Teapot status code from the backend service
@@ -214,9 +215,22 @@ func noRedirectPolicy(req *http.Request, via []*http.Request) error {
 	return http.ErrUseLastResponse
 }
 
-func extractString(input string, prefix string, postfix string) string {
-	prefixRemoved := strings.SplitN(input, prefix, 2)[1]
-	return strings.SplitN(prefixRemoved, postfix, 2)[0]
+func extractValue(input string, name string) string {
+	pattern := regexp.MustCompile("(?i)name=\"" + name + "\"\\s+VALUE=\"([^\"]*)\"")
+	matches := pattern.FindStringSubmatch(input)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
+}
+
+func extractAction(input string, name string) string {
+	pattern := regexp.MustCompile("(?i)" + name + "=\"([^\"]*)\"")
+	matches := pattern.FindStringSubmatch(input)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
 }
 
 func doCallback(client *http.Client, samlResponse string, relayState string, callbackURL string, loginResponse *http.Response) *http.Response {
@@ -239,7 +253,7 @@ func doCallback(client *http.Client, samlResponse string, relayState string, cal
 func createLoginRequest(client *http.Client, authnRequestResponse *http.Response, username string, password string) *http.Response {
 
 	authRequestResponseBody, _ := ioutil.ReadAll(authnRequestResponse.Body)
-	formUrl := strings.ReplaceAll(extractString(string(authRequestResponseBody), "action=\"", "\" method=\"post\""), "&amp;", "&")
+	formUrl := strings.ReplaceAll(extractAction(string(authRequestResponseBody), "action"), "&amp;", "&")
 	loginForm := url.Values{"username": {username}, "password": {password}}
 	loginFormRequest, err := http.NewRequest("POST", formUrl, strings.NewReader(loginForm.Encode()))
 	loginFormRequest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
