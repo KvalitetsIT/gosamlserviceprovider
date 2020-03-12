@@ -1,13 +1,14 @@
 package samlprovider
 
 import (
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	"github.com/beevik/etree"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -196,15 +197,7 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusForbidden, nil
 	}
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
-	response, err := handler.provider.SamlServiceProvider.ValidateEncodedResponse(samlResponse)
-	if err != nil {
-		handler.Logger.Errorf("Cannot decode SAML response: %v", err)
-	}
-	responseStr, _ := response.Document.WriteToString()
-	handler.Logger.Debugf("Raw samlresponse: %v", responseStr)
-	document := etree.NewDocument()
-	document.SetRoot(response.Document.FindElements("//Assertion")[0])
-	assertionXml, _ := document.WriteToString()
+	assertionXml, _ := GetSignedAssertions(samlResponse)
 	//handler.provider.SamlServiceProvider.
 	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithAssertionAndClientCert(uuid.New().String(), assertionXml, &assertionInfo.Assertions[0], "")
 	if err != nil {
@@ -255,4 +248,16 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	handler.Logger.Debugf("Redirecting to original URL: %v", relayState)
 	http.Redirect(w, r, relayState, http.StatusFound)
 	return http.StatusFound, nil
+}
+
+func GetSignedAssertions(samlResponse string) (string, error) {
+	decoded, err := base64.StdEncoding.DecodeString(samlResponse)
+	if err != nil {
+		return "", err
+	}
+	//TODO optionally decrypt
+	pattern := regexp.MustCompile("(<saml:Assertion.*Assertion>)")
+	assertions := pattern.FindString(string(decoded))
+	return assertions, nil
+
 }
