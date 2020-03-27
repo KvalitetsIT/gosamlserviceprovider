@@ -148,22 +148,24 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 		handler.Logger.Warnf("No session found for id: %v", sessionId)
 		return http.StatusInternalServerError, err
 	}
-	nameIDs := session.UserAttributes["NameID"]
-	if nameIDs == nil || len(nameIDs) != 1 {
+	//TODO these should be found on the SessionData directly
+	nameIDs := ExtractNameID(session.Authenticationtoken)
+	if nameIDs == "" {
 		handler.Logger.Warnf("NameID not found on session")
 		return http.StatusInternalServerError, err
 	}
-	sessionIndex := session.SessionAttributes["SessionIndex"]
+	sessionIndex := ExtractSessionIndex(session.Authenticationtoken)
 	if sessionIndex == "" {
 		handler.Logger.Warnf("SessionIndex not found on session")
 		return http.StatusInternalServerError, err
 	}
-	handler.Logger.Debugf("Sending logout request to IDP with NameID: %s SessionIndex: %s", nameIDs[0], sessionIndex)
-	logoutRequestDocument, _ := handler.provider.SamlServiceProvider.BuildLogoutRequestDocument(nameIDs[0], sessionIndex)
+	handler.Logger.Debugf("Sending logout request to IDP with NameID: %s SessionIndex: %s", nameIDs, sessionIndex)
+	logoutRequestDocument, _ := handler.provider.SamlServiceProvider.BuildLogoutRequestDocument(nameIDs, sessionIndex)
 	logoutURLRedirect, _ := handler.provider.SamlServiceProvider.BuildLogoutURLRedirect("", logoutRequestDocument)
 	http.Redirect(w, r, logoutURLRedirect, http.StatusFound)
 	return http.StatusFound, nil
 }
+
 
 func (handler *SamlHandler) handleMetadata(w http.ResponseWriter, r *http.Request) (int, error) {
 	spMetadata, _ := handler.provider.Metadata()
@@ -214,8 +216,9 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusBadRequest, nil
 	}
 	handler.Logger.Debugf("Adding NameID and SessionIndex to session data")
-	sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
-	sessionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex
+	//TODO These should be saved somewhere in the SessionData
+	/*sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
+	sesionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex*/
 	hours, err := strconv.Atoi(handler.sessionExpiryHours)
 	if err != nil {
 	  hours = 3
@@ -271,4 +274,27 @@ func GetSignedAssertionsWithEtree(samlResponse string) (string,error) {
     assertionDocument.SetRoot(assertions.Copy())
     assertionXml, _ := assertionDocument.WriteToString()
     return assertionXml,nil
+}
+
+
+func ExtractNameID(assertionXml string) string {
+    decoded,_ := base64.StdEncoding.DecodeString(assertionXml)
+    document := etree.NewDocument()
+    document.ReadFromString(string(decoded))
+    elements := document.FindElements("//NameID")
+    if len(elements) == 1 {
+        return elements[0].Text()
+    }
+    return ""
+}
+
+func ExtractSessionIndex(assertionXml string) string {
+    decoded,_ := base64.StdEncoding.DecodeString(assertionXml)
+    document := etree.NewDocument()
+    document.ReadFromString(string(decoded))
+    elements := document.FindElements("//AuthnStatement")
+    if len(elements) == 1 {
+        return elements[0].SelectAttrValue("SessionIndex","")
+    }
+    return ""
 }
