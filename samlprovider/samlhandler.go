@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"github.com/beevik/etree"
 )
 
 type SamlHandler struct {
@@ -215,16 +216,12 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	handler.Logger.Debugf("Adding NameID and SessionIndex to session data")
 	sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
 	sessionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex
-	expiry := assertionInfo.SessionNotOnOrAfter
-	if expiry == nil {
-		hours, err := strconv.Atoi(handler.sessionExpiryHours)
-		if err != nil {
-			hours = 3
-		}
-		handler.Logger.Infof("Expiry is not provided in SAML assertion, using %v hours", hours)
-		time := time.Now().Add(time.Duration(hours) * time.Hour)
-		expiry = &time
+	hours, err := strconv.Atoi(handler.sessionExpiryHours)
+	if err != nil {
+	  hours = 3
 	}
+	expiry := time.Now().Add(time.Duration(hours) * time.Hour)
+	sessionData.Timestamp = expiry
 	err = handler.provider.sessionCache.SaveSessionData(sessionData)
 	if err != nil {
 		handler.Logger.Warnf("Error saving sessionData: %v", err)
@@ -237,7 +234,7 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	cookie := http.Cookie{
 		Name:     handler.provider.sessionHeaderName,
 		Value:    sessionData.Sessionid,
-		Expires:  *expiry,
+		Expires:  expiry,
 		Domain:   handler.cookieDomain,
 		Path:     handler.cookiePath,
 		HttpOnly: true,
@@ -256,8 +253,22 @@ func GetSignedAssertions(samlResponse string) (string, error) {
 		return "", err
 	}
 	//TODO optionally decrypt
-	pattern := regexp.MustCompile("(<saml:Assertion.*Assertion>)")
+	pattern := regexp.MustCompile("(<([^:]*:)?Assertion.*Assertion>)")
 	assertions := pattern.FindString(string(decoded))
-	return assertions, nil
 
+	namespace := regexp.MustCompile("<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
+    assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
+	return assertions, nil
+}
+
+func GetSignedAssertionsWithEtree(samlResponse string) (string,error) {
+    decoded,_ := base64.StdEncoding.DecodeString(samlResponse)
+    xml := string(decoded)
+    document := etree.NewDocument()
+    document.ReadFromString(xml)
+    assertions := document.FindElements("//Assertion")[0]
+    assertionDocument := etree.NewDocument()
+    assertionDocument.SetRoot(assertions.Copy())
+    assertionXml, _ := assertionDocument.WriteToString()
+    return assertionXml,nil
 }

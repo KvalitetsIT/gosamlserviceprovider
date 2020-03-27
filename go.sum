@@ -30,6 +30,16 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/KvalitetsIT/caddy/v2 v2.0.0-20191207064707-edf22def147c h1:e0KpuPXLct+XLzDxgMly4kj9mnjkUXItHp4WPPvAPAU=
 github.com/KvalitetsIT/caddy/v2 v2.0.0-20191207064707-edf22def147c/go.mod h1:7yhgu9cBT/7SodBYbvrVoPscFuhZ6Oyj4+QsBjpyXJE=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200204001025-d5663ceab3ff h1:f9H+6UOBnm9AanL7svWKlRxJW931qpi1+ApGWxKb+iA=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200204001025-d5663ceab3ff/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200306141034-09d1e546a98a h1:F8D6tVCBRnmIMGlc3BaSEY07uKuvvPpTPNlHJ6sq+k4=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200306141034-09d1e546a98a/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200309120138-2446d6b6bf9a h1:OAMj6ZBs8Ol2bWZCME2v5drLRcfXAtzm4L3ylxQY7B0=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200309120138-2446d6b6bf9a/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200309122911-d95298edaa97 h1:LcnMRPjnxeBFqLeREswqdTcvQ865SNQ/T+cHHN/jkwI=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200309122911-d95298edaa97/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200311115749-13fe093be2ad h1:YOAe6rBuIUWfsyjQNP5jy7OxJV7RfQlaPhH2S6vaKjE=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20200311115749-13fe093be2ad/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a h1:YUYvrlYBNKwwlYgtpBRRJhrwreXx2gfG+vtBNnKNbSk=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200219131852-4e2af9f3db3a/go.mod h1:af3uGIwL7HUcV3oofY3AMUSdSRGbzCwyDCCDBLvH4cI=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4 h1:Ry3KOYV8Encjz4FJDTzQCE0g/x0kI+yWKDT27038fR8=
@@ -548,6 +558,7 @@ google.golang.org/genproto v0.0.0-20190502173448-54afdca5d873/go.mod h1:VzzqZJRn
 google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64/go.mod h1:DMBHOl98Agz4BDEuKkezgsaosCRResVns1a3J2ZsMNc=
 google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55/go.mod h1:DMBHOl98Agz4BDEuKkezgsaosCRResVns1a3J2ZsMNc=
 google.golang.org/genproto v0.0.0-20190911173649-1774047e7e51/go.mod h1:IbNlFCBrqXvoKpeg0TB2l7cyZUmoaFKYIwrEpbDKLA8=
+google.golang.org/genproto v0.0.0-20191216164720-4f79533eabd1 h1:aQktFqmDE2yjveXJlVIfslDFmFnUXSqG0i6KRcJAeMc=
 google.golang.org/genproto v0.0.0-20191216164720-4f79533eabd1/go.mod h1:n3cpQtvxv34hfy77yVDNjmbRyujviMdxYliBSkLhpCc=
 google.golang.org/grpc v1.17.0/go.mod h1:6QZJwpn2B+Zp71q/5VxRsJ6NXXVCE5NRUHRo+f3cWCs=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=

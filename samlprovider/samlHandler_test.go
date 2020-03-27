@@ -3,15 +3,12 @@ package samlprovider
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/base64"
 	"encoding/xml"
-	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"github.com/google/uuid"
 	"github.com/russellhaering/gosaml2/types"
 	"go.uber.org/zap"
 	"gotest.tools/assert"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"testing"
@@ -121,14 +118,6 @@ func testHandleSamlLoginResponse_noSamlResponse(t *testing.T) {
 	response, err := samlHandler.handleSamlLoginResponse(w, r)
 	assert.NilError(t, err)
 	assert.Equal(t, http.StatusForbidden, response)
-}
-
-func TestGetSignedAssertions(t *testing.T) {
-	bytes, _ := ioutil.ReadFile("./testdata/samltest-response.xml")
-	response := base64.StdEncoding.EncodeToString(bytes)
-	assertions, err := GetSignedAssertions(string(response))
-	assert.NilError(t, err)
-	fmt.Println(assertions)
 }
 
 //Utils
