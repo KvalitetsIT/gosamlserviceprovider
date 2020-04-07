@@ -1,6 +1,6 @@
 module github.com/KvalitetsIT/gosamlserviceprovider
 
-go 1.13.4
+go 1.14
 
 require (
 	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4
