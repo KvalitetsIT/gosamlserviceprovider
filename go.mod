@@ -1,7 +1,5 @@
 module github.com/KvalitetsIT/gosamlserviceprovider
 
-go 1.14
-
 require (
 	github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200305103405-07b87d8e37d4
 	github.com/Masterminds/sprig/v3 v3.0.2 // indirect
