@@ -75,19 +75,16 @@ func testGetSessionId(t *testing.T) {
 	headerWithCookie := http.Header{}
 	sessionId := uuid.New().String()
 	headerWithCookie.Add("Cookie", samlHandler.sessionHeaderName+"="+sessionId+";")
-	foundInCookie, err := samlHandler.GetSessionId(&http.Request{Header: headerWithCookie})
-	assert.NilError(t, err)
+	foundInCookie := samlHandler.GetSessionId(&http.Request{Header: headerWithCookie})
 	assert.Equal(t, sessionId, foundInCookie)
 
 	header := http.Header{}
 	header.Add(samlHandler.sessionHeaderName, sessionId)
-	foundInHeader, err := samlHandler.GetSessionId(&http.Request{Header: header})
-	assert.NilError(t, err)
+	foundInHeader := samlHandler.GetSessionId(&http.Request{Header: header})
 	assert.Equal(t, sessionId, foundInHeader)
 
 	headerWithNoSession := http.Header{}
-	notFound, err := samlHandler.GetSessionId(&http.Request{Header: headerWithNoSession})
-	assert.NilError(t, err)
+	notFound := samlHandler.GetSessionId(&http.Request{Header: headerWithNoSession})
 	assert.Equal(t, "", notFound)
 
 }

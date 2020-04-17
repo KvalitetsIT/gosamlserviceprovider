@@ -64,18 +64,18 @@ func (handler *SamlHandler) isSamlProtocol(r *http.Request) bool {
 	return false
 }
 
-func (handler *SamlHandler) GetSessionId(r *http.Request) (string, error) {
+func (handler *SamlHandler) GetSessionId(r *http.Request) string {
 	sessionId := r.Header.Get(handler.sessionHeaderName)
 	cookie, _ := r.Cookie(handler.sessionHeaderName)
 	if sessionId != "" {
 		handler.Logger.Debugf("SessionId: %v found in Header", sessionId)
-		return sessionId, nil
+		return sessionId
 	}
 	if cookie != nil {
 		handler.Logger.Debugf("SessionId: %v found in Cookie", cookie.Value)
-		return cookie.Value, nil
+		return cookie.Value
 	}
-	return "", nil
+	return ""
 }
 
 func (handler *SamlHandler) Handle(w http.ResponseWriter, r *http.Request) (int, error) {
@@ -99,11 +99,7 @@ func (handler *SamlHandler) Handle(w http.ResponseWriter, r *http.Request) (int,
 }
 
 func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWriter) (int, error) {
-	sessionId, err := handler.GetSessionId(r)
-	if err != nil {
-		handler.Logger.Warnf("Unable to extraxt sessionID from request: %v", err)
-		return http.StatusInternalServerError, err
-	}
+	sessionId := handler.GetSessionId(r)
 	if sessionId == "" {
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
@@ -119,9 +115,9 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 	handler.Logger.Debugf("Clearing session cookie")
 	http.SetCookie(w, &cookie)
 	handler.Logger.Debugf("Deleting session data from cache")
-	err = handler.provider.sessionCache.DeleteSessionData(sessionId)
-	if err != nil {
-		handler.Logger.Warnf("Unable to delete session data", err)
+	err := handler.provider.sessionCache.DeleteSessionData(sessionId)
+	if (err != nil) {
+		handler.Logger.Errorf("Unable to delete session data: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
 	fmt.Fprintf(w, "You are succesfully logged out")
@@ -129,22 +125,18 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 }
 
 func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (int, error) {
-	sessionId, err := handler.GetSessionId(r)
-	if err != nil {
-		handler.Logger.Warnf("Unable to extraxt sessionID from request: %v", err)
-		return http.StatusInternalServerError, err
-	}
-	if sessionId == "" {
+	sessionId := handler.GetSessionId(r)
+	if (sessionId == "") {
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
 	handler.Logger.Debugf("Initiating log out of session: %s ", sessionId)
 	session, err := handler.provider.sessionCache.FindSessionDataForSessionId(sessionId)
-	if err != nil {
-		handler.Logger.Warnf("Cannot lookup session: %v", err)
+	if (err != nil) {
+		handler.Logger.Errorf("Cannot lookup session: %s", err)
 		return http.StatusInternalServerError, err
 	}
-	if session == nil {
+	if (session == nil) {
 		handler.Logger.Warnf("No session found for id: %v", sessionId)
 		return http.StatusInternalServerError, err
 	}
@@ -203,16 +195,14 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	assertionXml, _ := GetSignedAssertions(samlResponse)
 	//handler.provider.SamlServiceProvider.
 	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithAssertionAndClientCert(uuid.New().String(), assertionXml, &assertionInfo.Assertions[0], "")
-	if err != nil {
-		handler.Logger.Warnf("Error creating sessionData: %v", err)
-		fmt.Println("Error creating sessionData: " + err.Error())
+	if (err != nil) {
+		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
 		return http.StatusBadRequest, nil
 	}
 	handler.Logger.Debugf("Creating session data")
 	sessionData, err := sessionDataCreator.CreateSessionData()
-	if err != nil {
-		handler.Logger.Warnf("Error creating sessionData: %v", err)
-		fmt.Println("Error creating sessionData: " + err.Error())
+	if (err != nil) {
+		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
 		return http.StatusBadRequest, nil
 	}
 	handler.Logger.Debugf("Adding NameID and SessionIndex to session data")
@@ -220,15 +210,14 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	/*sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
 	sesionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex*/
 	hours, err := strconv.Atoi(handler.sessionExpiryHours)
-	if err != nil {
+	if (err != nil) {
 	  hours = 3
 	}
 	expiry := time.Now().Add(time.Duration(hours) * time.Hour)
 	sessionData.Timestamp = expiry
 	err = handler.provider.sessionCache.SaveSessionData(sessionData)
-	if err != nil {
-		handler.Logger.Warnf("Error saving sessionData: %v", err)
-		fmt.Println("Error saving sessionData: " + err.Error())
+	if (err != nil) {
+		handler.Logger.Errorf("Error saving sessionData: %s", err.Error())
 		return http.StatusBadRequest, nil
 	}
 
@@ -260,7 +249,7 @@ func GetSignedAssertions(samlResponse string) (string, error) {
 	assertions := pattern.FindString(string(decoded))
 
 	namespace := regexp.MustCompile("<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
-    assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
+    	assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
 	return assertions, nil
 }
 
