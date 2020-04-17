@@ -20,6 +20,7 @@ type SamlHandler struct {
 	logoutPath      string
 	metadataPath    string
 	sloCallbackPath string
+	logoutLandingPage string
 
 	cookieDomain string
 	cookiePath   string
@@ -42,6 +43,12 @@ func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProv
 	s.cookiePath = config.CookiePath
 	s.sessionHeaderName = config.SessionHeaderName
 	s.sessionExpiryHours = config.SessionExpiryHours
+
+	if (config.LogoutLandingPage == "") {
+		s.logoutLandingPage = config.ExternalUrl
+	} else {
+		s.logoutLandingPage = config.LogoutLandingPage
+	}
 
 	s.provider = provider
 	s.Logger = config.Logger
@@ -120,8 +127,10 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		handler.Logger.Errorf("Unable to delete session data: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
-	fmt.Fprintf(w, "You are succesfully logged out")
-	return http.StatusOK, nil
+	handler.Logger.Debugf("The user is succesfully logged out")
+
+	http.Redirect(w, r, handler.logoutLandingPage, http.StatusFound)
+	return http.StatusFound, nil
 }
 
 func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (int, error) {

@@ -34,6 +34,7 @@ type SamlServiceProviderConfig struct {
 	SamlLogoutPath   string
 	SamlSLOPath      string
 	SamlSSOPath      string
+	LogoutLandingPage string
 
 	Logger *zap.SugaredLogger
 }
