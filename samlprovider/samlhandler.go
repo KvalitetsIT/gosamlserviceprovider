@@ -254,10 +254,10 @@ func GetSignedAssertions(samlResponse string) (string, error) {
 		return "", err
 	}
 	//TODO optionally decrypt
-	pattern := regexp.MustCompile("(<([^:]*:)?Assertion.*Assertion>)")
+	pattern := regexp.MustCompile("(?s)(<([^:]*:)?Assertion.*Assertion>)")
 	assertions := pattern.FindString(string(decoded))
 
-	namespace := regexp.MustCompile("<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
+	namespace := regexp.MustCompile("(?s)<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
     	assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
 	return assertions, nil
 }

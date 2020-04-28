@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"io/ioutil"
+	"fmt"
 )
 
 var (
@@ -25,6 +27,7 @@ func TestSamlHandler(t *testing.T) {
 	t.Run("Test HandleSamlResponse invalid time", testHandleSamlLoginResponse_invalidTime)
 	t.Run("Test HandleSamlResponse no saml response provided", testHandleSamlLoginResponse_noSamlResponse)
 	t.Run("Test SAML metadata without SLO", testMetadata)
+	t.Run("Test SAML Response with lots of attributes", testHandleSamlLoginResponse_withLotsOfAttributes)
 }
 
 func setup() {
@@ -107,6 +110,24 @@ func testHandleSamlLoginResponse_invalidTime(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, http.StatusForbidden, response)
 }
+
+func testHandleSamlLoginResponse_withLotsOfAttributes(t *testing.T) {
+	// Given
+	content, readErr := ioutil.ReadFile("testdata/samlresponse_lotsofattributes.base64")
+	assert.NilError(t, readErr)
+	expectedAssertion, readErr := ioutil.ReadFile("testdata/samlresponse_lotsofattributes.assertion")
+	assert.NilError(t, readErr)
+
+	// When
+	assertionXmlString, err := GetSignedAssertions(string(content))
+
+	// Then
+	assert.NilError(t, err)
+	assert.Equal(t, expectedAssertion, assertionXmlString)
+}
+
+
+
 
 func testHandleSamlLoginResponse_noSamlResponse(t *testing.T) {
 	r := &http.Request{}
