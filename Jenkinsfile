@@ -9,13 +9,6 @@ podTemplate(
                 checkout scm
             }
 
-            stage('Build Docker resouce images with to be used during build') {
-                container('docker') {
-                    docker.build("build-gooioidwsrestresources/sts", "-f ./testgooioidwsrest/Dockerfile-resources-sts --no-cache ./testgooioidwsrest")
-                    docker.build("build-gooioidwsrestresources/servicea", "-f ./testgooioidwsrest/Dockerfile-resources-servicea --no-cache ./testgooioidwsrest")
-                }
-            }
-
             stage('Make sure that the testenvironments starts from clean') {
                 container('docker') {
                     dir('testgosamlserviceprovider') {
