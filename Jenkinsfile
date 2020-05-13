@@ -22,7 +22,7 @@ podTemplate(
                 container('docker') {
                     dir('testgosamlserviceprovider') {
                         sh 'docker-compose up -d'
-                        sh 'ls'
+                        sh 'ls -l'
                         sh 'waitforkeycloak.sh'
                     }
                 }
