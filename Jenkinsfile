@@ -21,7 +21,8 @@ podTemplate(
             stage('Startup the testenvironment used by the integration tests') {
                 container('docker') {
                     dir('testgosamlserviceprovider') {
-                        sh 'docker-compose  --verbose up -d'
+                        sh 'docker-compose up -d'
+                        sh 'ls'
                         sh './waitforkeycloak.sh'
                     }
                 }
