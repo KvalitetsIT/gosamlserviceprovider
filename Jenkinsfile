@@ -35,9 +35,11 @@ podTemplate(
             }
         } finally {
             container('docker') {
-                dir('testgosamlserviceprovider') {
-                    sh 'docker-compose -f docker-compose-caddy.yml stop'
-                    sh 'docker-compose stop'
+                stage('Clean up') {
+                    dir('testgosamlserviceprovider') {
+                        sh 'docker-compose -f docker-compose-caddy.yml stop'
+                        sh 'docker-compose stop'
+                    }
                 }
             }
         }
