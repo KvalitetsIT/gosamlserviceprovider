@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
+	"encoding/json"
 	"errors"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
@@ -28,6 +29,7 @@ type SamlServiceProviderConfig struct {
 	IdpMetaDataUrl          string
 	SessionHeaderName       string
 	SessionExpiryHours      string
+	SessiondataHeaderName   string
 
 	ExternalUrl      string
 	SamlMetadataPath string
@@ -42,6 +44,7 @@ type SamlServiceProviderConfig struct {
 type SamlServiceProvider struct {
 	sessionCache        securityprotocol.SessionCache
 	sessionHeaderName   string
+	SessiondataHeaderName   string
 	externalUrl         string
 	SamlServiceProvider *saml2.SAMLServiceProvider
 	SamlHandler         *SamlHandler
@@ -64,6 +67,7 @@ func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sess
 	s.sessionCache = sessionCache
 	s.sessionHeaderName = config.SessionHeaderName
 	s.externalUrl = config.ExternalUrl
+	s.SessiondataHeaderName = config.SessiondataHeaderName
 	s.SamlHandler = NewSamlHandler(config, s)
 	s.Logger = config.Logger
 	return s
@@ -120,6 +124,9 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 		IDPCertificateStore:         &certStore,
 		SPKeyStore:                  spKeyStore,
 	}
+
+	//signingContext := sp.SigningContext()
+	//signingContext.Canonicalizer = dsig.MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
 
 	return sp, nil
 }
@@ -190,6 +197,16 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 
 			// The session id ok ... pass-through to next handler
 			r.Header.Add(a.sessionHeaderName, sessionId)
+
+			if (len(a.SessiondataHeaderName) > 0) {
+                                sessionDataValue, err := getSessionDataValue(sessionData)
+                                if (err != nil) {
+                                        a.Logger.Error(fmt.Sprintf("Error '%s' creating sessiondatavalue for header (sesssionid: %s)", err.Error(), sessionId))
+                                        return http.StatusInternalServerError, err
+                                }
+                                r.Header.Set(a.SessiondataHeaderName, sessionDataValue)
+                        }
+
 			return service.Handle(w, r)
 		}
 	}
@@ -198,9 +215,21 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 	return authenticateStatusCode, err
 }
 
+func getSessionDataValue(sessionData *securityprotocol.SessionData) (string, error) {
+        sessionDataBytes, marshalErr := json.Marshal(sessionData)
+        if (marshalErr != nil) {
+                return "", marshalErr
+        }
+        encodedData := base64.StdEncoding.EncodeToString(sessionDataBytes)
+        return encodedData, nil
+
+}
+
+
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
 	a.Logger.Debugf("No Session found, redirecting to IDP")
 	relayState := buildUrl(a.externalUrl, r.RequestURI)
+
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
 	if (err != nil) {
 		a.Logger.Errorf("Error generating authentication request: %s", err.Error())
