@@ -225,6 +225,47 @@ func getSessionDataValue(sessionData *securityprotocol.SessionData) (string, err
 
 }
 
+func (a *SamlServiceProvider) CreateLogoutResponse(logoutRequest *saml2.LogoutRequest, w http.ResponseWriter) (int, error) {
+
+	status := saml2.StatusCodeSuccess
+	relayState := ""
+
+	responseDocTree, err := a.SamlServiceProvider.BuildLogoutResponseDocument(status, logoutRequest.ID)
+	if (err != nil) {
+		a.Logger.Errorf("Error building logout response: %s", err.Error())
+		return http.StatusInternalServerError, err
+	}
+
+	responseBytes, err := a.SamlServiceProvider.BuildLogoutResponseBodyPostFromDocument(relayState, responseDocTree)
+	if (err != nil) {
+		a.Logger.Errorf("Error building logout response post from document: %s", err.Error())
+		return http.StatusInternalServerError, err
+	}
+
+	w.Write(responseBytes)
+	return http.StatusOK, err
+}
+
+func (a *SamlServiceProvider) ParseLogoutRequest(r *http.Request) (*saml2.LogoutRequest, error) {
+
+	encodedRequest, err := ioutil.ReadAll(r.Body)
+	if (err != nil) {
+		a.Logger.Errorf("Error reading body of logout request: %s", err.Error())
+		return nil, err
+	}
+	logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(string(encodedRequest))
+
+	if (err != nil) {
+		a.Logger.Errorf("Error validating encoded logout request: %s", err.Error())
+		return nil, err
+	}
+
+	if (logoutRequest == nil) {
+		a.Logger.Errorf("Could not validate logoutrequest: %s", string(encodedRequest))
+		return nil, errors.New("Could not validate logout request")
+	}
+	return logoutRequest, nil
+}
 
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {
 	a.Logger.Debugf("No Session found, redirecting to IDP")

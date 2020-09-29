@@ -111,6 +111,12 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
+
+	logoutRequest, err := handler.provider.ParseLogoutRequest(r)
+	if (err != nil) {
+		return http.StatusBadRequest, err
+	}
+
 	handler.Logger.Debugf("Received logout callback from IDP for session: %s ", sessionId)
 	cookie := http.Cookie{
 		Name:     handler.sessionHeaderName,
@@ -122,15 +128,16 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 	handler.Logger.Debugf("Clearing session cookie")
 	http.SetCookie(w, &cookie)
 	handler.Logger.Debugf("Deleting session data from cache")
-	err := handler.provider.sessionCache.DeleteSessionData(sessionId)
+	err = handler.provider.sessionCache.DeleteSessionData(sessionId)
 	if (err != nil) {
 		handler.Logger.Errorf("Unable to delete session data: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
-	handler.Logger.Debugf("The user is succesfully logged out")
+	handler.Logger.Debugf("The user is succesfully logged out in this application")
 
-	http.Redirect(w, r, handler.logoutLandingPage, http.StatusFound)
-	return http.StatusFound, nil
+	handler.provider.CreateLogoutResponse(logoutRequest, w)
+
+	return http.StatusOK, nil
 }
 
 func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (int, error) {

@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"testing"
 	"io/ioutil"
-	"fmt"
+//	"fmt"
 )
 
 var (
