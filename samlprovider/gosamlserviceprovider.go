@@ -253,15 +253,16 @@ func (a *SamlServiceProvider) ParseLogoutRequest(r *http.Request) (*saml2.Logout
 		a.Logger.Errorf("Error reading body of logout request: %s", err.Error())
 		return nil, err
 	}
-	logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(string(encodedRequest))
+	encodedRequestString := string(encodedRequest)
+	logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString)
 
 	if (err != nil) {
-		a.Logger.Errorf("Error validating encoded logout request: %s", err.Error())
+		a.Logger.Errorf("Error validating encoded logout request (request payload: %s) (error: %s)", encodedRequestString, err.Error())
 		return nil, err
 	}
 
 	if (logoutRequest == nil) {
-		a.Logger.Errorf("Could not validate logoutrequest: %s", string(encodedRequest))
+		a.Logger.Errorf("Could not validate logoutrequest: %s", encodedRequestString)
 		return nil, errors.New("Could not validate logout request")
 	}
 	return logoutRequest, nil
