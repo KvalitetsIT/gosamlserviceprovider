@@ -256,6 +256,9 @@ func (a *SamlServiceProvider) ParseLogoutRequest(r *http.Request) (*saml2.Logout
 		return nil, err
 	}
 	encodedRequestString := string(encodedRequest)
+	if (len(encodedRequest) == 0) {
+		return nil, nil
+	}
 	logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString)
 
 	if (err != nil) {

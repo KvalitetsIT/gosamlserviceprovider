@@ -125,6 +125,7 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		Path:     handler.cookiePath,
 		HttpOnly: true,
 	}
+
 	handler.Logger.Debugf("Clearing session cookie")
 	http.SetCookie(w, &cookie)
 	handler.Logger.Debugf("Deleting session data from cache")
@@ -135,9 +136,13 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 	}
 	handler.Logger.Debugf("The user is succesfully logged out in this application")
 
-	handler.provider.CreateLogoutResponse(logoutRequest, w)
+	if (logoutRequest != nil) {
+		handler.provider.CreateLogoutResponse(logoutRequest, w)
+		return http.StatusOK, nil
+	}
 
-	return http.StatusOK, nil
+	http.Redirect(w, r, handler.logoutLandingPage, http.StatusFound)
+	return http.StatusFound, nil
 }
 
 func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (int, error) {
