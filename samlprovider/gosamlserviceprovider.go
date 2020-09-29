@@ -30,6 +30,7 @@ type SamlServiceProviderConfig struct {
 	SessionHeaderName       string
 	SessionExpiryHours      string
 	SessiondataHeaderName   string
+	SkipSignatureValidation bool
 
 	ExternalUrl      string
 	SamlMetadataPath string
@@ -123,6 +124,7 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 		AudienceURI:                 config.AudienceRestriction,
 		IDPCertificateStore:         &certStore,
 		SPKeyStore:                  spKeyStore,
+		SkipSignatureValidation:     config.SkipSignatureValidation,
 	}
 
 	//signingContext := sp.SigningContext()
