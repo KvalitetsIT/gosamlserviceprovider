@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -248,29 +249,49 @@ func (a *SamlServiceProvider) CreateLogoutResponse(logoutRequest *saml2.LogoutRe
 	return http.StatusOK, err
 }
 
-func (a *SamlServiceProvider) ParseLogoutRequest(r *http.Request) (*saml2.LogoutRequest, error) {
+func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.LogoutRequest, *types.LogoutResponse, error) {
 
 	encodedRequest, err := ioutil.ReadAll(r.Body)
 	if (err != nil) {
 		a.Logger.Errorf("Error reading body of logout request: %s", err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 	encodedRequestString := string(encodedRequest)
+	a.Logger.Debugf("Considering logout payload: %s", encodedRequestString)
 	if (len(encodedRequest) == 0) {
-		return nil, nil
-	}
-	logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString)
-
-	if (err != nil) {
-		a.Logger.Errorf("Error validating encoded logout request (request payload: %s) (error: %s)", encodedRequestString, err.Error())
-		return nil, err
+		return nil, nil, nil
 	}
 
-	if (logoutRequest == nil) {
-		a.Logger.Errorf("Could not validate logoutrequest: %s", encodedRequestString)
-		return nil, errors.New("Could not validate logout request")
+	if (strings.HasPrefix(encodedRequestString, "SAMLResponse=")) {
+		logoutResponse, err := a.SamlServiceProvider.ValidateEncodedLogoutResponsePOST(encodedRequestString)
+		if (err != nil) {
+			a.Logger.Errorf("Error validating encoded logout response (request payload: %s) (error: %s)", encodedRequestString, err.Error())
+			return nil, logoutResponse, err
+		}
+
+		if (logoutResponse == nil) {
+			a.Logger.Errorf("Could not validate logoutResponse: %s", encodedRequestString)
+			return nil, nil, errors.New("Could not validate logoutResponse")
+		}
 	}
-	return logoutRequest, nil
+
+	if (strings.HasPrefix(encodedRequestString, "SAMLRequest=")) {
+		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString)
+
+		if (err != nil) {
+			a.Logger.Errorf("Error validating encoded logout request (request payload: %s) (error: %s)", encodedRequestString, err.Error())
+			return nil, nil, err
+		}
+
+		if (logoutRequest == nil) {
+			a.Logger.Errorf("Could not validate logoutrequest: %s", encodedRequestString)
+			return nil, nil, errors.New("Could not validate logout request")
+		}
+		return logoutRequest, nil, nil
+	}
+
+	a.Logger.Debugf("Could not determine payload: %s", encodedRequestString)
+	return nil, nil, nil
 }
 
 func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter, r *http.Request) (int, error) {

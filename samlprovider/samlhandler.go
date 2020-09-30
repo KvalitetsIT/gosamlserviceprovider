@@ -111,13 +111,13 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
+	handler.Logger.Debugf("Received logout callback from IDP for session: %s ", sessionId)
 
-	logoutRequest, err := handler.provider.ParseLogoutRequest(r)
+	logoutRequest, _, err := handler.provider.ParseLogoutPayload(r)
 	if (err != nil) {
 		return http.StatusBadRequest, err
 	}
 
-	handler.Logger.Debugf("Received logout callback from IDP for session: %s ", sessionId)
 	cookie := http.Cookie{
 		Name:     handler.sessionHeaderName,
 		MaxAge:   -1,
