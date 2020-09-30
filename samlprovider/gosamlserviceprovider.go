@@ -263,7 +263,7 @@ func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.Logout
 	}
 
 	if (strings.HasPrefix(encodedRequestString, "SAMLResponse=")) {
-		logoutResponse, err := a.SamlServiceProvider.ValidateEncodedLogoutResponsePOST(encodedRequestString)
+		logoutResponse, err := a.SamlServiceProvider.ValidateEncodedLogoutResponsePOST(encodedRequestString[13:len(encodedRequestString)])
 		if (err != nil) {
 			a.Logger.Errorf("Error validating encoded logout response (request payload: %s) (error: %s)", encodedRequestString, err.Error())
 			return nil, logoutResponse, err
@@ -276,7 +276,7 @@ func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.Logout
 	}
 
 	if (strings.HasPrefix(encodedRequestString, "SAMLRequest=")) {
-		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString)
+		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString[12:len(encodedRequestString)])
 
 		if (err != nil) {
 			a.Logger.Errorf("Error validating encoded logout request (request payload: %s) (error: %s)", encodedRequestString, err.Error())
