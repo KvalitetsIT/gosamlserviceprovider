@@ -14,6 +14,7 @@ import (
 	dsig "github.com/russellhaering/goxmldsig"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -263,9 +264,15 @@ func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.Logout
 	}
 
 	if (strings.HasPrefix(encodedRequestString, "SAMLResponse=")) {
-		logoutResponse, err := a.SamlServiceProvider.ValidateEncodedLogoutResponsePOST(encodedRequestString[13:len(encodedRequestString)])
+		urlEncoded := encodedRequestString[13:len(encodedRequestString)]
+		urlDecoded, err := url.QueryUnescape(urlEncoded)
 		if (err != nil) {
-			a.Logger.Errorf("Error validating encoded logout response (request payload: %s) (error: %s)", encodedRequestString, err.Error())
+			// Lets assume it was not urlDecoded
+			urlDecoded = urlEncoded
+		}
+		logoutResponse, err := a.SamlServiceProvider.ValidateEncodedLogoutResponsePOST(urlDecoded)
+		if (err != nil) {
+			a.Logger.Errorf("Error validating encoded logout response (decoded payload: %s) (error: %s)", urlDecoded, err.Error())
 			return nil, logoutResponse, err
 		}
 
@@ -276,10 +283,16 @@ func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.Logout
 	}
 
 	if (strings.HasPrefix(encodedRequestString, "SAMLRequest=")) {
-		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(encodedRequestString[12:len(encodedRequestString)])
+		urlEncoded := encodedRequestString[12:len(encodedRequestString)]
+		urlDecoded, err := url.QueryUnescape(urlEncoded)
+		if (err != nil) {
+			// Lets assume it was not urlDecoded
+			urlDecoded = urlEncoded
+		}
+		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(urlDecoded
 
 		if (err != nil) {
-			a.Logger.Errorf("Error validating encoded logout request (request payload: %s) (error: %s)", encodedRequestString, err.Error())
+			a.Logger.Errorf("Error validating encoded logout request (decoded payload: %s) (error: %s)", urlDecoded, err.Error())
 			return nil, nil, err
 		}
 
