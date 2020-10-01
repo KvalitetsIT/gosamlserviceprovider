@@ -289,7 +289,7 @@ func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.Logout
 			// Lets assume it was not urlDecoded
 			urlDecoded = urlEncoded
 		}
-		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(urlDecoded
+		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(urlDecoded)
 
 		if (err != nil) {
 			a.Logger.Errorf("Error validating encoded logout request (decoded payload: %s) (error: %s)", urlDecoded, err.Error())
