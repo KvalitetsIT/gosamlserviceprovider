@@ -18,13 +18,11 @@ services:
      image: jboss/keycloak:8.0.1
      environment:
      #Set in the keycloak-add-user.json file
-     #- KEYCLOAK_USER=keycloak
-     #- KEYCLOAK_PASSWORD=keycloak
       - KEYCLOAK_IMPORT=/importrealms/realm-test.json
      volumes_from:
        - keycloak-resources:rw
-     #ports:
-     # - "8080:8080"
+     ports:
+      - "8080:8080"
      networks:
        - gosamlserviceprovider
    echo:

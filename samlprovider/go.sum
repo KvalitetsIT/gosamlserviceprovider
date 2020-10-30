@@ -2,6 +2,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/KvalitetsIT/gosaml2 v0.0.0-20200311115749-13fe093be2ad h1:YOAe6rBuIUWfsyjQNP5jy7OxJV7RfQlaPhH2S6vaKjE=
 github.com/KvalitetsIT/gosaml2 v0.0.0-20200311115749-13fe093be2ad/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20201030140015-1552cb4e4bec h1:ZESEReRY7NjfdFzCmr8OYesGtLFMCe2LhFTF4ehD/2Y=
+github.com/KvalitetsIT/gosaml2 v0.0.0-20201030140015-1552cb4e4bec/go.mod h1:yw7TSVqDvppr+vI/o9zfuP94S/R5qgb7drMMxF4LqB8=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200506140209-281b8e0d6539 h1:srb0fAhrQK8c+1JgQqnHh44DJ10jO/ECX6qTfZBehYY=
 github.com/KvalitetsIT/gosecurityprotocol v0.0.0-20200506140209-281b8e0d6539/go.mod h1:vP/ZpfXhOiJ+oqW/BeUwFWtQZJ/Y8ZkVUBibBINKysc=
 github.com/beevik/etree v1.1.0 h1:T0xke/WvNtMoCqgzPhkX2r4rjY3GDZFi+FjpRZY2Jbs=

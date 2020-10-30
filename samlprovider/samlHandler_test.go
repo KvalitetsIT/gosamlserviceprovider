@@ -116,14 +116,18 @@ func testHandleSamlLoginResponse_withLotsOfAttributes(t *testing.T) {
 	content, readErr := ioutil.ReadFile("testdata/samlresponse_lotsofattributes.base64")
 	assert.NilError(t, readErr)
 	expectedAssertion, readErr := ioutil.ReadFile("testdata/samlresponse_lotsofattributes.assertion")
+	expectedAssertionStr := string(expectedAssertion)
 	assert.NilError(t, readErr)
 
+	cert, err := tls.LoadX509KeyPair("./testdata/sp.cer", "./testdata/sp.pem")
+	assert.NilError(t, err)
+
 	// When
-	assertionXmlString, err := GetSignedAssertions(string(content))
+	assertionXmlString, err := GetSignedAssertions(string(content), &cert)
 
 	// Then
 	assert.NilError(t, err)
-	assert.Equal(t, expectedAssertion, assertionXmlString)
+	assert.Equal(t, expectedAssertionStr, assertionXmlString)
 }
 
 

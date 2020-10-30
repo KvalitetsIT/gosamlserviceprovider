@@ -1,11 +1,13 @@
 package samlprovider
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"github.com/google/uuid"
+	"github.com/russellhaering/gosaml2/types"
 	"go.uber.org/zap"
 	"net/http"
 	"regexp"
@@ -213,8 +215,17 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		return http.StatusForbidden, nil
 	}
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
-	assertionXml, _ := GetSignedAssertions(samlResponse)
-	//handler.provider.SamlServiceProvider.
+	cert, err := handler.provider.SamlServiceProvider.GetDecryptCertificate()
+	if (err != nil) {
+		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
+		return http.StatusInternalServerError, nil
+	}
+	assertionXml, err := GetSignedAssertions(samlResponse, cert)
+	if (err != nil) {
+		handler.Logger.Errorf("Error getting SignedAssertion: %s", err.Error())
+		return http.StatusInternalServerError, nil
+	}
+
 	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithAssertionAndClientCert(uuid.New().String(), assertionXml, &assertionInfo.Assertions[0], "")
 	if (err != nil) {
 		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
@@ -257,33 +268,42 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	relayState := r.FormValue("RelayState")
 	handler.Logger.Debugf("Redirecting to original URL: %v", relayState)
 	http.Redirect(w, r, relayState, http.StatusFound)
+
 	return http.StatusFound, nil
 }
 
-func GetSignedAssertions(samlResponse string) (string, error) {
+func GetSignedAssertions(samlResponse string, cert *tls.Certificate) (string, error) {
 	decoded, err := base64.StdEncoding.DecodeString(samlResponse)
 	if err != nil {
 		return "", err
 	}
-	//TODO optionally decrypt
 	pattern := regexp.MustCompile("(?s)(<([^:]*:)?Assertion.*Assertion>)")
 	assertions := pattern.FindString(string(decoded))
 
-	namespace := regexp.MustCompile("(?s)<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
-    	assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
-	return assertions, nil
-}
 
-func GetSignedAssertionsWithEtree(samlResponse string) (string,error) {
-    decoded,_ := base64.StdEncoding.DecodeString(samlResponse)
-    xml := string(decoded)
-    document := etree.NewDocument()
-    document.ReadFromString(xml)
-    assertions := document.FindElements("//Assertion")[0]
-    assertionDocument := etree.NewDocument()
-    assertionDocument.SetRoot(assertions.Copy())
-    assertionXml, _ := assertionDocument.WriteToString()
-    return assertionXml,nil
+	if (len(assertions) == 0) {
+		//TODO optionally decrypt
+		encryptedPattern := regexp.MustCompile("(?s)(<([^:]*:)?EncryptedAssertion.*EncryptedAssertion>)")
+		encryptedAssertion := encryptedPattern.FindString(string(decoded))
+
+		if (len(encryptedAssertion) > 0) {
+
+			namespace := regexp.MustCompile("(?s)<([[:alpha:]][^:][[:alpha:]]*)?(:)?EncryptedAssertion>")
+			encryptedAssertionNoNamespace := namespace.ReplaceAllString(encryptedAssertion,"<${1}${2}EncryptedAssertion xmlns:${1}=\"urn:oasis:names:tc:SAML:2.0:assertion\">" )
+
+			ea := new(types.EncryptedAssertion)
+			err = xml.Unmarshal([]byte(encryptedAssertionNoNamespace), ea)
+			if err != nil {
+				return "", err
+			}
+			decryptedAssertion, err := ea.DecryptBytes(cert)
+			return string(decryptedAssertion), err
+		}
+	}
+
+	namespace := regexp.MustCompile("(?s)<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
+	assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
+	return assertions, nil
 }
 
 

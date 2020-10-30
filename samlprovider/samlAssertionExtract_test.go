@@ -10,11 +10,13 @@ import (
 func TestGetSignedAssertions(t *testing.T)  {
     bytes, _ := ioutil.ReadFile("./testdata/samlresponse.base64")
     encoded := string(bytes)
-    assertionXml, _ := GetSignedAssertionsWithEtree(encoded)
+    assertionXml, _ := GetSignedAssertions(encoded, nil)
     ioutil.WriteFile("./testdata/etree.xml", []byte(assertionXml), 0644)
-    calculated,_ := GetSignedAssertions(encoded)
+    calculated,_ := GetSignedAssertions(encoded, nil)
     ioutil.WriteFile("./testdata/regex.xml", []byte(calculated), 0644)
 }
+
+
 
 func TestExtractNameID(t *testing.T)  {
     bytes, _ := ioutil.ReadFile("./testdata/authenticationToken.base64")
