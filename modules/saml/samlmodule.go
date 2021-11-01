@@ -72,7 +72,7 @@ func init() {
 // CaddyModule returns the Caddy module information.
 func (SamlProviderModule) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		Name: "http.handlers.samlprovider",
+		ID: "http.handlers.samlprovider",
 		New:  func() caddy.Module { return new(SamlProviderModule) },
 	}
 }

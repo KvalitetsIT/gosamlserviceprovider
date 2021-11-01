@@ -65,7 +65,7 @@ func init() {
 // CaddyModule returns the Caddy module information.
 func (PrometheusModule) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		Name: "http.handlers.prometheus",
+		ID: "http.handlers.prometheus",
 		New:  func() caddy.Module { return new(PrometheusModule) },
 	}
 }
