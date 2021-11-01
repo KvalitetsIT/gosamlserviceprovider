@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	gosamlserviceprovider "gosamlserviceprovider/samlprovider"
+	gosamlserviceprovider "github.com/KvalitetsIT/gosamlserviceprovider/samlprovider"
 	"net/http"
 	"strconv"
 

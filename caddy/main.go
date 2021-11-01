@@ -5,8 +5,8 @@ import (
 
 	// plug in Caddy modules here
 	_ "github.com/caddyserver/caddy/v2/modules/standard"
-	_ "gosamlserviceprovider/modules/saml"
-	_ "gosamlserviceprovider/modules/prometheus"
+	_ "github.com/KvalitetsIT/gosamlserviceprovider/modules/saml"
+	_ "github.com/KvalitetsIT/gosamlserviceprovider/modules/prometheus"
 )
 
 func main() {

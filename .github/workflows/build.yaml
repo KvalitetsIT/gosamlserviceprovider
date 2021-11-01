@@ -1,0 +1,27 @@
+name: Build Action - GoSecurityProtocol
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      # Checkout source code
+      - uses: actions/checkout@v2
+
+      - name: Create docker network
+        run: docker network create testgosamlserviceprovider_gosamlserviceprovider
+
+      - name: Startup the testenvironment used by the integration tests
+        run: docker-compose up -d
+        working-directory: testgosamlserviceprovider
+      
+      - name: Check that KeyCloack is up
+        run: sh ./waitforkeycloak.sh
+        working-directory: testgosamlserviceprovider
+
+      - name: Build Docker image
+        run: docker build -t kvalitetsit/caddysamlprovider --network testgosamlserviceprovider_gosamlserviceprovider .    
