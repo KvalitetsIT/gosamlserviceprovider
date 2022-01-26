@@ -26,6 +26,7 @@ type SamlHandler struct {
 
 	cookieDomain string
 	cookiePath   string
+	cookieHttpOnly bool
 
 	sessionHeaderName  string
 	sessionExpiryHours string
@@ -43,6 +44,7 @@ func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProv
 	s.sloCallbackPath = config.SamlSLOPath
 	s.cookieDomain = config.CookieDomain
 	s.cookiePath = config.CookiePath
+	s.cookieHttpOnly = config.CookieHttpOnly
 	s.sessionHeaderName = config.SessionHeaderName
 	s.sessionExpiryHours = config.SessionExpiryHours
 
@@ -125,7 +127,7 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 		MaxAge:   -1,
 		Domain:   handler.cookieDomain,
 		Path:     handler.cookiePath,
-		HttpOnly: true,
+		HttpOnly: handler.cookieHttpOnly,
 	}
 
 	handler.Logger.Debugf("Clearing session cookie")
