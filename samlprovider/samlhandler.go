@@ -263,7 +263,7 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		Expires:  expiry,
 		Domain:   handler.cookieDomain,
 		Path:     handler.cookiePath,
-		HttpOnly: true,
+		HttpOnly: handler.cookieHttpOnly,
 	}
 	http.SetCookie(w, &cookie)
 	w.Header().Add(handler.provider.sessionHeaderName, sessionData.Sessionid)
