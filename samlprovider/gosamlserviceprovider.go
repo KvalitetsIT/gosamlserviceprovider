@@ -26,7 +26,7 @@ type SamlServiceProviderConfig struct {
 	EntityId                string
 	CookieDomain            string
 	CookiePath              string
-	CookieHttpOnly          bool
+	CookieHttpOnly          bool 
 	AudienceRestriction     string
 	SignAuthnRequest        bool
 	IdpMetaDataUrl          string

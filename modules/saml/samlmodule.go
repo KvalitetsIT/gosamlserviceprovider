@@ -45,6 +45,7 @@ type SamlProviderModule struct {
 	SSOPath      string `json:"sso_path,omitempty"`
 	CookieDomain string `json:"cookie_domain,omitempty"`
 	CookiePath   string `json:"cookie_path,omitempty"`
+	CookieHttoOnly string `json:"cookie_http_only,omitempty"`
 
 	SamlProvider *gosamlserviceprovider.SamlServiceProvider
 
