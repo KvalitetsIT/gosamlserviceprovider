@@ -193,7 +193,7 @@ func validateRole(roles []string, attributeName string, sessionData *securitypro
 	fmt.Println(attributeName)
 	fmt.Println(sessionData.SessionAttributes)
 	fmt.Println(sessionData.UserAttributes)
-	fmt.Print("CHECK ROLES 1234")
+	fmt.Println("CHECK ROLES 1234")
 	// initialize role map
 	containRoles := map[string]bool{}
 	for _, role := range roles {
