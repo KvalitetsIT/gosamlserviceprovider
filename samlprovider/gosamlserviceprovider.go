@@ -182,10 +182,16 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
 	fmt.Print("CHECK ROLES HERE")
 	fmt.Println(roles)
+	fmt.Println(sessionData.SessionAttributes["dk:medcom:video:role"])
 	fmt.Println(attributeName)
 	fmt.Println(sessionData.SessionAttributes)
 	fmt.Println(sessionData.UserAttributes)
 	fmt.Print("CHECK ROLES HERE")
+	//value, ok := sessionData.SessionAttributes[attributeName]
+	//if !ok {
+	//	return errors.New(fmt.Sprintf("session data does not contain attribute with name %s", attributeName))
+	//}
+
 	return nil
 }
 
