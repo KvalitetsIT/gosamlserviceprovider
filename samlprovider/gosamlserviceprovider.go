@@ -179,7 +179,7 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 	return EntityDescriptor(bodyBytes)
 }
 
-func validateRole(roles []string, attributeName string, sessionData securityprotocol.SessionData) error {
+func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
 	// initialize role map
 	containRoles := map[string]bool{}
 	for _, role := range roles {
@@ -223,15 +223,15 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 		}
 		if sessionData != nil {
 			// if allowed roles is set, validate if session data contains a valid role
-			if a.Config != nil && len(a.Config.AllowedRoles) > 0 {
+			if a.Config != nil && len(a.Config.AllowedRoles) > 0 && a.Config.RoleAttributeName != "" {
 				// build allowed role list; each item in list means OR and spaces inside item means AND: eg. AllowedRoles=["admin public", "root", "kit test"]
 				// translates to (admin AND public) OR (root) OR (kit AND test)
 				roleErr := errors.New("could not find a valid role")
 				for _, role := range a.Config.AllowedRoles {
 					role = strings.TrimSpace(role)
 					andRoles := strings.Fields(role)
-					// check if roles exist
-					if err := validateRole(andRoles, a.Config.RoleAttributeName, *sessionData); err == nil {
+					// check if session data contains valid roles set
+					if err := validateRole(andRoles, a.Config.RoleAttributeName, sessionData); err == nil {
 						// exit out of loop since a valid role is already found
 						roleErr = nil
 						break
