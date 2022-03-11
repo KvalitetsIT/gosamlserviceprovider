@@ -180,23 +180,42 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 }
 
 func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
-	fmt.Println("CHECK ROLES HERE")
+	fmt.Println("CHECK ROLES HERE 1234")
+	fmt.Println("ATTRIBUTES")
 	for k, v := range sessionData.SessionAttributes {
 		fmt.Println(k)
 		fmt.Println(v)
 	}
+	fmt.Println("ATTRIBUTES")
 	fmt.Println(roles)
 	fmt.Println(sessionData.SessionAttributes)
 	fmt.Println(sessionData.SessionAttributes["dk:medcom:video:role:"])
 	fmt.Println(attributeName)
 	fmt.Println(sessionData.SessionAttributes)
 	fmt.Println(sessionData.UserAttributes)
-	fmt.Print("CHECK ROLES HERE")
-	//value, ok := sessionData.SessionAttributes[attributeName]
-	//if !ok {
-	//	return errors.New(fmt.Sprintf("session data does not contain attribute with name %s", attributeName))
-	//}
-
+	fmt.Print("CHECK ROLES 1234")
+	// initialize role map
+	containRoles := map[string]bool{}
+	for _, role := range roles {
+		containRoles[role] = false
+	}
+	// get available roles
+	presentedRolesString, ok := sessionData.SessionAttributes[attributeName]
+	if !ok {
+		return errors.New(fmt.Sprintf("no field with attribute name %s present", attributeName))
+	}
+	presentedRolesArray := strings.Fields(presentedRolesString)
+	for _, role := range presentedRolesArray {
+		if _, ok := containRoles[role]; ok {
+			containRoles[role] = true
+		}
+	}
+	// check all roles are set
+	for k, v := range containRoles {
+		if !v {
+			return errors.New(fmt.Sprintf("role %s not set", k))
+		}
+	}
 	return nil
 }
 
