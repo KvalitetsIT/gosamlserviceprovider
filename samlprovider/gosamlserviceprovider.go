@@ -180,21 +180,11 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 }
 
 func validateRole(roles []string, attributeName string, sessionData securityprotocol.SessionData) error {
-	fmt.Println("CHECK ROLES HERE 12345")
-	fmt.Println("ATTRIBUTES")
-	fmt.Println(sessionData.SessionAttributes)
-	for k, v := range sessionData.SessionAttributes {
+	for k, v := range sessionData.UserAttributes {
 		fmt.Println(k)
 		fmt.Println(v)
 	}
-	fmt.Println("ATTRIBUTES")
-	fmt.Println(roles)
-	fmt.Println(len(sessionData.SessionAttributes))
-	fmt.Println(sessionData.SessionAttributes["dk:medcom:video:role:"])
-	fmt.Println(attributeName)
-	fmt.Println(sessionData.SessionAttributes)
-	fmt.Println(sessionData.UserAttributes)
-	fmt.Println("CHECK ROLES 1234")
+	fmt.Println(sessionData.UserAttributes["dk:medcom:video:role"])
 	// initialize role map
 	containRoles := map[string]bool{}
 	for _, role := range roles {
