@@ -179,7 +179,7 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 	return EntityDescriptor(bodyBytes)
 }
 
-func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
+func validateRole(roles []string, attributeName string, sessionData securityprotocol.SessionData) error {
 	fmt.Println("CHECK ROLES HERE 12345")
 	fmt.Println("ATTRIBUTES")
 	fmt.Println(sessionData.SessionAttributes)
@@ -247,7 +247,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 					role = strings.TrimSpace(role)
 					andRoles := strings.Fields(role)
 					// check if roles exist
-					if err := validateRole(andRoles, a.Config.RoleAttributeName, sessionData); err == nil {
+					if err := validateRole(andRoles, a.Config.RoleAttributeName, *sessionData); err == nil {
 						// exit out of loop since a valid role is already found
 						roleErr = nil
 						break
