@@ -180,9 +180,9 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 }
 
 func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
-	fmt.Print("CHECK ROLES HERE")
+	fmt.Println("CHECK ROLES HERE")
 	fmt.Println(roles)
-	fmt.Println(sessionData.SessionAttributes["dk:medcom:video:role"])
+	fmt.Println(sessionData.SessionAttributes["dk:medcom:video:role:"])
 	fmt.Println(attributeName)
 	fmt.Println(sessionData.SessionAttributes)
 	fmt.Println(sessionData.UserAttributes)
