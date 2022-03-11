@@ -180,23 +180,17 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 }
 
 func validateRole(roles []string, attributeName string, sessionData securityprotocol.SessionData) error {
-	for k, v := range sessionData.UserAttributes {
-		fmt.Println(k)
-		fmt.Println(v)
-	}
-	fmt.Println(sessionData.UserAttributes["dk:medcom:video:role"])
 	// initialize role map
 	containRoles := map[string]bool{}
 	for _, role := range roles {
 		containRoles[role] = false
 	}
 	// get available roles
-	presentedRolesString, ok := sessionData.SessionAttributes[attributeName]
+	presentedRoles, ok := sessionData.UserAttributes[attributeName]
 	if !ok {
 		return errors.New(fmt.Sprintf("no field with attribute name %s present", attributeName))
 	}
-	presentedRolesArray := strings.Fields(presentedRolesString)
-	for _, role := range presentedRolesArray {
+	for _, role := range presentedRoles {
 		if _, ok := containRoles[role]; ok {
 			containRoles[role] = true
 		}
