@@ -3,10 +3,11 @@ package saml
 import (
 	"crypto/tls"
 	"fmt"
-	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	gosamlserviceprovider "github.com/KvalitetsIT/gosamlserviceprovider/samlprovider"
 	"net/http"
 	"strconv"
+
+	gosamlserviceprovider "github.com/KvalitetsIT/gosamlserviceprovider/samlprovider"
+	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
@@ -46,6 +47,9 @@ type SamlProviderModule struct {
 	CookieDomain string `json:"cookie_domain,omitempty"`
 	CookiePath   string `json:"cookie_path,omitempty"`
 
+	RoleAttributeName string   `json:"role_attribute_name,omitempty"`
+	AllowedRoles      []string `json:"allowed_roles,omitempty"`
+
 	SamlProvider *gosamlserviceprovider.SamlServiceProvider
 
 	Logger *zap.SugaredLogger
@@ -72,8 +76,8 @@ func init() {
 // CaddyModule returns the Caddy module information.
 func (SamlProviderModule) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID: "http.handlers.samlprovider",
-		New:  func() caddy.Module { return new(SamlProviderModule) },
+		ID:  "http.handlers.samlprovider",
+		New: func() caddy.Module { return new(SamlProviderModule) },
 	}
 }
 
@@ -111,6 +115,10 @@ func (m *SamlProviderModule) Provision(ctx caddy.Context) error {
 	samlProviderConfig.ExternalUrl = m.ExternalUrl
 	samlProviderConfig.CookieDomain = m.CookieDomain
 	samlProviderConfig.CookiePath = m.CookiePath
+
+	samlProviderConfig.RoleAttributeName = m.RoleAttributeName
+	samlProviderConfig.AllowedRoles = m.AllowedRoles
+
 	samlProviderConfig.AudienceRestriction = m.AudienceRestriction
 	samlProviderConfig.IdpMetaDataUrl = m.IdpMetaDataUrl
 	samlProviderConfig.SessionHeaderName = m.SessionHeaderName

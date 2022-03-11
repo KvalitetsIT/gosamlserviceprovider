@@ -4,19 +4,20 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/xml"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
-	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	saml2 "github.com/russellhaering/gosaml2"
-	"github.com/russellhaering/gosaml2/types"
-	dsig "github.com/russellhaering/goxmldsig"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+
+	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
+	saml2 "github.com/russellhaering/gosaml2"
+	"github.com/russellhaering/gosaml2/types"
+	dsig "github.com/russellhaering/goxmldsig"
 
 	"go.uber.org/zap"
 )
@@ -34,30 +35,33 @@ type SamlServiceProviderConfig struct {
 	SessiondataHeaderName   string
 	SkipSignatureValidation bool
 
-	ExternalUrl      string
-	SamlMetadataPath string
-	SamlLogoutPath   string
-	SamlSLOPath      string
-	SamlSSOPath      string
+	ExternalUrl       string
+	SamlMetadataPath  string
+	SamlLogoutPath    string
+	SamlSLOPath       string
+	SamlSSOPath       string
 	LogoutLandingPage string
+
+	RoleAttributeName string
+	AllowedRoles      []string
 
 	Logger *zap.SugaredLogger
 }
 
 type SamlServiceProvider struct {
-	sessionCache        securityprotocol.SessionCache
-	sessionHeaderName   string
-	SessiondataHeaderName   string
-	externalUrl         string
-	SamlServiceProvider *saml2.SAMLServiceProvider
-	SamlHandler         *SamlHandler
-	Logger              *zap.SugaredLogger
+	sessionCache          securityprotocol.SessionCache
+	sessionHeaderName     string
+	SessiondataHeaderName string
+	externalUrl           string
+	SamlServiceProvider   *saml2.SAMLServiceProvider
+	SamlHandler           *SamlHandler
+	Logger                *zap.SugaredLogger
 }
 
 func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*SamlServiceProvider, error) {
 
 	samlServiceProvider, err := createSamlServiceProvider(config)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 
@@ -79,13 +83,13 @@ func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sess
 func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLServiceProvider, error) {
 	// Read and parse the IdP metadata
 	rawMetadata, err := DownloadIdpMetadata(config)
-	if (err != nil) {
+	if err != nil {
 		config.Logger.Errorf("Error downloading IdP metadata: %s", err.Error())
 		return nil, err
 	}
 	idpMetadata := &types.EntityDescriptor{}
 	err = xml.Unmarshal(rawMetadata, idpMetadata)
-	if (err != nil) {
+	if err != nil {
 		config.Logger.Errorf("Cannot unmarshal IDP metadata: %s", err.Error())
 		return nil, err
 	}
@@ -98,13 +102,13 @@ func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLSe
 				return nil, fmt.Errorf("metadata certificate(%d) must not be empty", idx)
 			}
 			certData, err := base64.StdEncoding.DecodeString(xcert.Data)
-			if (err != nil) {
+			if err != nil {
 				config.Logger.Errorf("Error decoding certificate: %s", err.Error())
 				return nil, err
 			}
 
 			idpCert, err := x509.ParseCertificate(certData)
-			if (err != nil) {
+			if err != nil {
 				config.Logger.Errorf("Error parsing certificate: %s", err.Error())
 				return nil, err
 			}
@@ -155,7 +159,7 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 	//download metadata from idp
 	config.Logger.Infof("Downloading IDP metadata from: %s", config.IdpMetaDataUrl)
 	resp, err := http.Get(config.IdpMetaDataUrl)
-	if (err != nil) {
+	if err != nil {
 		config.Logger.Errorf("Cannot download metadata: %s", err.Error())
 		return nil, err
 	}
@@ -165,7 +169,7 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if (err != nil) {
+	if err != nil {
 		config.Logger.Errorf("Cannot download metadata: %s", err.Error())
 		return nil, err
 	}
@@ -185,12 +189,12 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 	// The request identifies a session, check that the session is valid and get it
 	if sessionId != "" {
 		sessionData, err := a.sessionCache.FindSessionDataForSessionId(sessionId)
-		if (err != nil) {
+		if err != nil {
 			a.Logger.Errorf("Cannot look up session in cache: %v", err.Error())
 			return http.StatusInternalServerError, err
 		}
 
-		if (sessionData != nil) {
+		if sessionData != nil {
 
 			// Check if the user is requesting sessiondata
 			handlerFunc := securityprotocol.IsRequestForSessionData(sessionData, a.sessionCache, w, r)
@@ -202,14 +206,14 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 			// The session id ok ... pass-through to next handler
 			r.Header.Add(a.sessionHeaderName, sessionId)
 
-			if (len(a.SessiondataHeaderName) > 0) {
-                                sessionDataValue, err := getSessionDataValue(sessionData)
-                                if (err != nil) {
-                                        a.Logger.Error(fmt.Sprintf("Error '%s' creating sessiondatavalue for header (sesssionid: %s)", err.Error(), sessionId))
-                                        return http.StatusInternalServerError, err
-                                }
-                                r.Header.Set(a.SessiondataHeaderName, sessionDataValue)
-                        }
+			if len(a.SessiondataHeaderName) > 0 {
+				sessionDataValue, err := getSessionDataValue(sessionData)
+				if err != nil {
+					a.Logger.Error(fmt.Sprintf("Error '%s' creating sessiondatavalue for header (sesssionid: %s)", err.Error(), sessionId))
+					return http.StatusInternalServerError, err
+				}
+				r.Header.Set(a.SessiondataHeaderName, sessionDataValue)
+			}
 
 			return service.Handle(w, r)
 		}
@@ -220,12 +224,12 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 }
 
 func getSessionDataValue(sessionData *securityprotocol.SessionData) (string, error) {
-        sessionDataBytes, marshalErr := json.Marshal(sessionData)
-        if (marshalErr != nil) {
-                return "", marshalErr
-        }
-        encodedData := base64.StdEncoding.EncodeToString(sessionDataBytes)
-        return encodedData, nil
+	sessionDataBytes, marshalErr := json.Marshal(sessionData)
+	if marshalErr != nil {
+		return "", marshalErr
+	}
+	encodedData := base64.StdEncoding.EncodeToString(sessionDataBytes)
+	return encodedData, nil
 
 }
 
@@ -235,13 +239,13 @@ func (a *SamlServiceProvider) CreateLogoutResponse(logoutRequest *saml2.LogoutRe
 	relayState := ""
 
 	responseDocTree, err := a.SamlServiceProvider.BuildLogoutResponseDocument(status, logoutRequest.ID)
-	if (err != nil) {
+	if err != nil {
 		a.Logger.Errorf("Error building logout response: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
 
 	responseBytes, err := a.SamlServiceProvider.BuildLogoutResponseBodyPostFromDocument(relayState, responseDocTree)
-	if (err != nil) {
+	if err != nil {
 		a.Logger.Errorf("Error building logout response post from document: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
@@ -253,53 +257,53 @@ func (a *SamlServiceProvider) CreateLogoutResponse(logoutRequest *saml2.LogoutRe
 func (a *SamlServiceProvider) ParseLogoutPayload(r *http.Request) (*saml2.LogoutRequest, *types.LogoutResponse, error) {
 
 	encodedRequest, err := ioutil.ReadAll(r.Body)
-	if (err != nil) {
+	if err != nil {
 		a.Logger.Errorf("Error reading body of logout request: %s", err.Error())
 		return nil, nil, err
 	}
 	encodedRequestString := string(encodedRequest)
 	a.Logger.Debugf("Considering logout payload: %s", encodedRequestString)
-	if (len(encodedRequest) == 0) {
+	if len(encodedRequest) == 0 {
 		return nil, nil, nil
 	}
 
-	if (strings.HasPrefix(encodedRequestString, "SAMLResponse=")) {
+	if strings.HasPrefix(encodedRequestString, "SAMLResponse=") {
 		urlEncoded := encodedRequestString[13:len(encodedRequestString)]
 		urlDecoded, err := url.QueryUnescape(urlEncoded)
-		if (err != nil) {
+		if err != nil {
 			// Lets assume it was not urlDecoded
 			urlDecoded = urlEncoded
 		}
 		a.Logger.Debugf("Processing payload: as SAMLResponse %s", urlDecoded)
 		logoutResponse, err := a.SamlServiceProvider.ValidateEncodedLogoutResponsePOST(urlDecoded)
-		if (err != nil) {
+		if err != nil {
 			a.Logger.Errorf("Error validating encoded logout response (decoded payload: %s) (error: %s)", urlDecoded, err.Error())
 			return nil, logoutResponse, err
 		}
 
-		if (logoutResponse == nil) {
+		if logoutResponse == nil {
 			a.Logger.Errorf("Could not validate logoutResponse: %s", encodedRequestString)
 			return nil, nil, errors.New("Could not validate logoutResponse")
 		}
 		return nil, logoutResponse, nil
 	}
 
-	if (strings.HasPrefix(encodedRequestString, "SAMLRequest=")) {
+	if strings.HasPrefix(encodedRequestString, "SAMLRequest=") {
 		urlEncoded := encodedRequestString[12:len(encodedRequestString)]
 		urlDecoded, err := url.QueryUnescape(urlEncoded)
-		if (err != nil) {
+		if err != nil {
 			// Lets assume it was not urlDecoded
 			urlDecoded = urlEncoded
 		}
 		a.Logger.Debugf("Processing payload: as SAMLRequest %s", urlDecoded)
 		logoutRequest, err := a.SamlServiceProvider.ValidateEncodedLogoutRequestPOST(urlDecoded)
 
-		if (err != nil) {
+		if err != nil {
 			a.Logger.Errorf("Error validating encoded logout request (decoded payload: %s) (error: %s)", urlDecoded, err.Error())
 			return nil, nil, err
 		}
 
-		if (logoutRequest == nil) {
+		if logoutRequest == nil {
 			a.Logger.Errorf("Could not validate logoutrequest: %s", encodedRequestString)
 			return nil, nil, errors.New("Could not validate logout request")
 		}
@@ -315,7 +319,7 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 	relayState := buildUrl(a.externalUrl, r.RequestURI)
 
 	err := a.SamlServiceProvider.AuthRedirect(w, r, relayState)
-	if (err != nil) {
+	if err != nil {
 		a.Logger.Errorf("Error generating authentication request: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
@@ -324,7 +328,7 @@ func (a SamlServiceProvider) GenerateAuthenticationRequest(w http.ResponseWriter
 
 func (provider *SamlServiceProvider) Metadata() (*types.EntityDescriptor, error) {
 	spMetadata, err := provider.SamlServiceProvider.Metadata()
-	if (err != nil) {
+	if err != nil {
 		provider.Logger.Errorf("Error getting metadata from samlprovider: %s", err.Error())
 		return spMetadata, err
 	}

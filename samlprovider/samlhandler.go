@@ -5,27 +5,31 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
-	"github.com/google/uuid"
-	"github.com/russellhaering/gosaml2/types"
-	"go.uber.org/zap"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	securityprotocol "github.com/KvalitetsIT/gosecurityprotocol"
 	"github.com/beevik/etree"
+	"github.com/google/uuid"
+	"github.com/russellhaering/gosaml2/types"
+	"go.uber.org/zap"
 )
 
 type SamlHandler struct {
-	callbackPath    string
-	logoutPath      string
-	metadataPath    string
-	sloCallbackPath string
+	callbackPath      string
+	logoutPath        string
+	metadataPath      string
+	sloCallbackPath   string
 	logoutLandingPage string
 
 	cookieDomain string
 	cookiePath   string
+
+	RoleAttributeName string
+	AllowedRoles      []string
 
 	sessionHeaderName  string
 	sessionExpiryHours string
@@ -43,10 +47,14 @@ func NewSamlHandler(config *SamlServiceProviderConfig, provider *SamlServiceProv
 	s.sloCallbackPath = config.SamlSLOPath
 	s.cookieDomain = config.CookieDomain
 	s.cookiePath = config.CookiePath
+
+	s.RoleAttributeName = config.RoleAttributeName
+	s.AllowedRoles = config.AllowedRoles
+
 	s.sessionHeaderName = config.SessionHeaderName
 	s.sessionExpiryHours = config.SessionExpiryHours
 
-	if (config.LogoutLandingPage == "") {
+	if config.LogoutLandingPage == "" {
 		s.logoutLandingPage = config.ExternalUrl
 	} else {
 		s.logoutLandingPage = config.LogoutLandingPage
@@ -116,7 +124,7 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 	handler.Logger.Debugf("Received logout callback from IDP for session: %s ", sessionId)
 
 	logoutRequest, _, err := handler.provider.ParseLogoutPayload(r)
-	if (err != nil) {
+	if err != nil {
 		return http.StatusBadRequest, err
 	}
 
@@ -132,13 +140,13 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 	http.SetCookie(w, &cookie)
 	handler.Logger.Debugf("Deleting session data from cache")
 	err = handler.provider.sessionCache.DeleteSessionData(sessionId)
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Unable to delete session data: %s", err.Error())
 		return http.StatusInternalServerError, err
 	}
 	handler.Logger.Debugf("The user is succesfully logged out in this application")
 
-	if (logoutRequest != nil) {
+	if logoutRequest != nil {
 		handler.provider.CreateLogoutResponse(logoutRequest, w)
 		return http.StatusOK, nil
 	}
@@ -149,17 +157,17 @@ func (handler *SamlHandler) handleSLOCallback(r *http.Request, w http.ResponseWr
 
 func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (int, error) {
 	sessionId := handler.GetSessionId(r)
-	if (sessionId == "") {
+	if sessionId == "" {
 		handler.Logger.Warnf("No sessionId provided for logout")
 		return http.StatusBadRequest, nil
 	}
 	handler.Logger.Debugf("Initiating log out of session: %s ", sessionId)
 	session, err := handler.provider.sessionCache.FindSessionDataForSessionId(sessionId)
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Cannot lookup session: %s", err)
 		return http.StatusInternalServerError, err
 	}
-	if (session == nil) {
+	if session == nil {
 		handler.Logger.Warnf("No session found for id: %v", sessionId)
 		return http.StatusInternalServerError, err
 	}
@@ -180,7 +188,6 @@ func (handler *SamlHandler) handleSLO(r *http.Request, w http.ResponseWriter) (i
 	http.Redirect(w, r, logoutURLRedirect, http.StatusFound)
 	return http.StatusFound, nil
 }
-
 
 func (handler *SamlHandler) handleMetadata(w http.ResponseWriter, r *http.Request) (int, error) {
 	spMetadata, _ := handler.provider.Metadata()
@@ -216,24 +223,24 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	}
 	handler.Logger.Debugf("Succesfully validate SAML assertion")
 	cert, err := handler.provider.SamlServiceProvider.GetDecryptCertificate()
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
 		return http.StatusInternalServerError, nil
 	}
 	assertionXml, err := GetSignedAssertions(samlResponse, cert)
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Error getting SignedAssertion: %s", err.Error())
 		return http.StatusInternalServerError, nil
 	}
 
 	sessionDataCreator, err := securityprotocol.NewSamlSessionDataCreatorWithAssertionAndClientCert(uuid.New().String(), assertionXml, &assertionInfo.Assertions[0], "")
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
 		return http.StatusBadRequest, nil
 	}
 	handler.Logger.Debugf("Creating session data")
 	sessionData, err := sessionDataCreator.CreateSessionData()
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Error creating sessionData: %s", err.Error())
 		return http.StatusBadRequest, nil
 	}
@@ -242,13 +249,13 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 	/*sessionData.UserAttributes["NameID"] = []string{assertionInfo.NameID}
 	sesionData.SessionAttributes["SessionIndex"] = assertionInfo.SessionIndex*/
 	hours, err := strconv.Atoi(handler.sessionExpiryHours)
-	if (err != nil) {
-	  hours = 3
+	if err != nil {
+		hours = 3
 	}
 	expiry := time.Now().Add(time.Duration(hours) * time.Hour)
 	sessionData.Timestamp = expiry
 	err = handler.provider.sessionCache.SaveSessionData(sessionData)
-	if (err != nil) {
+	if err != nil {
 		handler.Logger.Errorf("Error saving sessionData: %s", err.Error())
 		return http.StatusBadRequest, nil
 	}
@@ -280,16 +287,15 @@ func GetSignedAssertions(samlResponse string, cert *tls.Certificate) (string, er
 	pattern := regexp.MustCompile("(?s)(<([^:]*:)?Assertion.*Assertion>)")
 	assertions := pattern.FindString(string(decoded))
 
-
-	if (len(assertions) == 0) {
+	if len(assertions) == 0 {
 		//TODO optionally decrypt
 		encryptedPattern := regexp.MustCompile("(?s)(<([^:]*:)?EncryptedAssertion.*EncryptedAssertion>)")
 		encryptedAssertion := encryptedPattern.FindString(string(decoded))
 
-		if (len(encryptedAssertion) > 0) {
+		if len(encryptedAssertion) > 0 {
 
 			namespace := regexp.MustCompile("(?s)<([[:alpha:]][^:][[:alpha:]]*)?(:)?EncryptedAssertion>")
-			encryptedAssertionNoNamespace := namespace.ReplaceAllString(encryptedAssertion,"<${1}${2}EncryptedAssertion xmlns:${1}=\"urn:oasis:names:tc:SAML:2.0:assertion\">" )
+			encryptedAssertionNoNamespace := namespace.ReplaceAllString(encryptedAssertion, "<${1}${2}EncryptedAssertion xmlns:${1}=\"urn:oasis:names:tc:SAML:2.0:assertion\">")
 
 			ea := new(types.EncryptedAssertion)
 			err = xml.Unmarshal([]byte(encryptedAssertionNoNamespace), ea)
@@ -302,29 +308,28 @@ func GetSignedAssertions(samlResponse string, cert *tls.Certificate) (string, er
 	}
 
 	namespace := regexp.MustCompile("(?s)<([^:]*)?(:)?Assertion xmlns=\"([^\"]*)\"")
-	assertions = namespace.ReplaceAllString(assertions,"<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"" )
+	assertions = namespace.ReplaceAllString(assertions, "<${1}${2}Assertion xmlns=\"$3\" xmlns:${1}=\"$3\"")
 	return assertions, nil
 }
 
-
 func ExtractNameID(assertionXml string) string {
-    decoded,_ := base64.StdEncoding.DecodeString(assertionXml)
-    document := etree.NewDocument()
-    document.ReadFromString(string(decoded))
-    elements := document.FindElements("//NameID")
-    if len(elements) == 1 {
-        return elements[0].Text()
-    }
-    return ""
+	decoded, _ := base64.StdEncoding.DecodeString(assertionXml)
+	document := etree.NewDocument()
+	document.ReadFromString(string(decoded))
+	elements := document.FindElements("//NameID")
+	if len(elements) == 1 {
+		return elements[0].Text()
+	}
+	return ""
 }
 
 func ExtractSessionIndex(assertionXml string) string {
-    decoded,_ := base64.StdEncoding.DecodeString(assertionXml)
-    document := etree.NewDocument()
-    document.ReadFromString(string(decoded))
-    elements := document.FindElements("//AuthnStatement")
-    if len(elements) == 1 {
-        return elements[0].SelectAttrValue("SessionIndex","")
-    }
-    return ""
+	decoded, _ := base64.StdEncoding.DecodeString(assertionXml)
+	document := etree.NewDocument()
+	document.ReadFromString(string(decoded))
+	elements := document.FindElements("//AuthnStatement")
+	if len(elements) == 1 {
+		return elements[0].SelectAttrValue("SessionIndex", "")
+	}
+	return ""
 }

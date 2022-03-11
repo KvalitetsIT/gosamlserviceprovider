@@ -24,4 +24,4 @@ jobs:
         working-directory: testgosamlserviceprovider
 
       - name: Build Docker image
-        run: docker build -t kvalitetsit/caddysamlprovider --network testgosamlserviceprovider_gosamlserviceprovider .    
+        run: docker build -t kvalitetsit/caddysamlprovider --network testgosamlserviceprovider_gosamlserviceprovider .
