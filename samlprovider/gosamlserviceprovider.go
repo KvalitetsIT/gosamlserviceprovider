@@ -56,6 +56,7 @@ type SamlServiceProvider struct {
 	SamlServiceProvider   *saml2.SAMLServiceProvider
 	SamlHandler           *SamlHandler
 	Logger                *zap.SugaredLogger
+	Config                *SamlServiceProviderConfig
 }
 
 func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, sessionCache securityprotocol.SessionCache) (*SamlServiceProvider, error) {
@@ -77,6 +78,8 @@ func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sess
 	s.SessiondataHeaderName = config.SessiondataHeaderName
 	s.SamlHandler = NewSamlHandler(config, s)
 	s.Logger = config.Logger
+	// todo: ask Eva if this is okay
+	s.Config = config
 	return s
 }
 
@@ -176,6 +179,16 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 	return EntityDescriptor(bodyBytes)
 }
 
+func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
+	fmt.Print("CHECK ROLES HERE")
+	fmt.Println(roles)
+	fmt.Println(attributeName)
+	fmt.Println(sessionData.SessionAttributes)
+	fmt.Println(sessionData.UserAttributes)
+	fmt.Print("CHECK ROLES HERE")
+	return nil
+}
+
 func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Request, service securityprotocol.HttpHandler) (int, error) {
 	if a.SamlHandler.isSamlProtocol(r) {
 		a.Logger.Debugf("Handling request as SAML")
@@ -193,8 +206,27 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 			a.Logger.Errorf("Cannot look up session in cache: %v", err.Error())
 			return http.StatusInternalServerError, err
 		}
-
 		if sessionData != nil {
+			// if allowed roles is set, validate if session data contains a valid role
+			if a.Config != nil && len(a.Config.AllowedRoles) > 0 {
+				// build allowed role list; each item in list means OR and spaces inside item means AND: eg. AllowedRoles=["admin public", "root", "kit test"]
+				// translates to (admin AND public) OR (root) OR (kit AND test)
+				roleErr := errors.New("could not find a valid role")
+				for _, role := range a.Config.AllowedRoles {
+					role = strings.TrimSpace(role)
+					andRoles := strings.Fields(role)
+					// check if roles exist
+					if err := validateRole(andRoles, a.Config.RoleAttributeName, sessionData); err == nil {
+						// exit out of loop since a valid role is already found
+						roleErr = nil
+						break
+					}
+				}
+				if roleErr != nil {
+					a.Logger.Error(err.Error())
+					return http.StatusUnauthorized, err
+				}
+			}
 
 			// Check if the user is requesting sessiondata
 			handlerFunc := securityprotocol.IsRequestForSessionData(sessionData, a.sessionCache, w, r)
