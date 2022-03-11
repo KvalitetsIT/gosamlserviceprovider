@@ -180,18 +180,27 @@ func DownloadIdpMetadata(config *SamlServiceProviderConfig) ([]byte, error) {
 }
 
 func validateRole(roles []string, attributeName string, sessionData *securityprotocol.SessionData) error {
-	fmt.Println("CHECK ROLES HERE")
-	fmt.Println(roles)
-	fmt.Println(sessionData.SessionAttributes["dk:medcom:video:role:"])
-	fmt.Println(attributeName)
-	fmt.Println(sessionData.SessionAttributes)
-	fmt.Println(sessionData.UserAttributes)
-	fmt.Print("CHECK ROLES HERE")
-	//value, ok := sessionData.SessionAttributes[attributeName]
-	//if !ok {
-	//	return errors.New(fmt.Sprintf("session data does not contain attribute with name %s", attributeName))
-	//}
-
+	// initialize role map
+	containRoles := map[string]bool{}
+	for _, role := range roles {
+		containRoles[role] = false
+	}
+	// get available roles
+	presentedRoles, ok := sessionData.UserAttributes[attributeName]
+	if !ok {
+		return errors.New(fmt.Sprintf("no field with attribute name %s present", attributeName))
+	}
+	for _, role := range presentedRoles {
+		if _, ok := containRoles[role]; ok {
+			containRoles[role] = true
+		}
+	}
+	// check all roles are set
+	for k, v := range containRoles {
+		if !v {
+			return errors.New(fmt.Sprintf("role %s not set", k))
+		}
+	}
 	return nil
 }
 
@@ -214,14 +223,14 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 		}
 		if sessionData != nil {
 			// if allowed roles is set, validate if session data contains a valid role
-			if a.Config != nil && len(a.Config.AllowedRoles) > 0 {
+			if a.Config != nil && len(a.Config.AllowedRoles) > 0 && a.Config.RoleAttributeName != "" {
 				// build allowed role list; each item in list means OR and spaces inside item means AND: eg. AllowedRoles=["admin public", "root", "kit test"]
 				// translates to (admin AND public) OR (root) OR (kit AND test)
 				roleErr := errors.New("could not find a valid role")
 				for _, role := range a.Config.AllowedRoles {
 					role = strings.TrimSpace(role)
 					andRoles := strings.Fields(role)
-					// check if roles exist
+					// check if session data contains valid roles set
 					if err := validateRole(andRoles, a.Config.RoleAttributeName, sessionData); err == nil {
 						// exit out of loop since a valid role is already found
 						roleErr = nil
