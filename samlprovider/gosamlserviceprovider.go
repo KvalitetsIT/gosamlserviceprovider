@@ -239,7 +239,7 @@ func (a SamlServiceProvider) HandleService(w http.ResponseWriter, r *http.Reques
 				}
 				if roleErr != nil {
 					a.Logger.Error(err.Error())
-					return http.StatusUnauthorized, err
+					return http.StatusUnauthorized, roleErr
 				}
 			}
 
