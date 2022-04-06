@@ -11,7 +11,6 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/russellhaering/gosaml2 v0.3.1
 	github.com/russellhaering/goxmldsig v0.0.0-20180430223755-7acd5e4a6ef7
-	go.mongodb.org/mongo-driver v1.8.4
 	go.uber.org/zap v1.21.0
 	gotest.tools v2.2.0+incompatible
 )
