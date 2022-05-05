@@ -1,0 +1,8 @@
+changelog:
+  exclude:
+    authors:
+      - kitautomation
+  categories:
+    - title: Changes
+      labels:
+        - "*"
