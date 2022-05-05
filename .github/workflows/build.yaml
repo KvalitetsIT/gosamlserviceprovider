@@ -2,7 +2,7 @@ name: Build Action - GoSecurityProtocol
 
 on:
   push:
-    branches: [ master ]
+    branches: [ 3-test-på-github-actions-mangler-før-et-nyt-tag-can-pushes-og-tilføjes-til-kitcaddy ]
 
 jobs:
   build:
