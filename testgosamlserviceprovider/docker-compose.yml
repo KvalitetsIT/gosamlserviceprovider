@@ -2,29 +2,35 @@ version: '2'
 networks:
   gosamlserviceprovider:
     driver: bridge
+    name: gosamlserviceprovider
+
 services:
    keycloak-resources:
      image: build-keycloak-resources
      build:
        context: .
        dockerfile: Dockerfile-keycloak-resources
+
    mongo:
      image: mongo:3.3
      #ports:
      #  - 27017:27017
      networks:
        - gosamlserviceprovider
+
    keycloak:
      image: jboss/keycloak:8.0.1
      environment:
      #Set in the keycloak-add-user.json file
       - KEYCLOAK_IMPORT=/importrealms/realm-test.json
+      - DB_VENDOR=h2
      volumes_from:
        - keycloak-resources:rw
      ports:
       - "8080:8080"
      networks:
        - gosamlserviceprovider
+
    echo:
      image: mendhak/http-https-echo
      networks:
