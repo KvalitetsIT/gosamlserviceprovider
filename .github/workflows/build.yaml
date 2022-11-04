@@ -1,9 +1,9 @@
 name: Build Action - GoSecurityProtocol
 
 on:
+  pull_request: ~
   push:
     branches: [ master ]
-    pull_request: ~
     tags: 
       - 'v*.*.*'
 
