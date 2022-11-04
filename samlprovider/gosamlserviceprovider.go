@@ -72,7 +72,7 @@ func NewSamlServiceProviderFromConfig(config *SamlServiceProviderConfig, session
 func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sessionCache securityprotocol.SessionCache, config *SamlServiceProviderConfig) *SamlServiceProvider {
 	s := new(SamlServiceProvider)
 	s.SamlServiceProvider = samlServiceProvider
-	s.sessionCache = sessionCache
+	s.sessionCache = wrappingSessionCache(sessionCache)
 	s.sessionHeaderName = config.SessionHeaderName
 	s.externalUrl = config.ExternalUrl
 	s.SessiondataHeaderName = config.SessiondataHeaderName
@@ -81,6 +81,47 @@ func newSamlServiceProvider(samlServiceProvider *saml2.SAMLServiceProvider, sess
 	// todo: ask Eva if this is okay
 	s.Config = config
 	return s
+}
+
+type WrappingSessionCache struct {
+	sessionCache securityprotocol.SessionCache
+}
+
+func (w WrappingSessionCache) SaveSessionData(data *securityprotocol.SessionData) error {
+
+	// See https://github.com/keycloak/keycloak/issues/14529
+	// Perform substitution of ascii escape character (see https://github.com/keycloak/keycloak/issues/14529 and https://www.w3.org/Signature/Drafts/WD-xml-c14n-20000907.html#Example-Chars)
+	assertion, err := base64.StdEncoding.DecodeString(string(data.Authenticationtoken))
+	if err != nil {
+		return err
+	}
+	assertionStr := string(assertion)
+	if strings.Contains(assertionStr, "&#13;\n") {
+		assertionStr = strings.ReplaceAll(assertionStr, "&#13;\n", "")
+
+		data.Authenticationtoken = base64.StdEncoding.EncodeToString([]byte(assertionStr))
+	}
+	return w.sessionCache.SaveSessionData(data)
+}
+
+func (w WrappingSessionCache) FindSessionDataForSessionId(sessionId string) (*securityprotocol.SessionData, error) {
+
+	return w.sessionCache.FindSessionDataForSessionId(sessionId)
+}
+
+func (w WrappingSessionCache) DeleteSessionData(sessionId string) error {
+
+	return w.sessionCache.DeleteSessionData(sessionId)
+}
+
+func wrappingSessionCache(cache securityprotocol.SessionCache) securityprotocol.SessionCache {
+	w := new(WrappingSessionCache)
+	w.sessionCache = cache
+	return w
+}
+
+func GetSessionCache(samlServiceProvider *SamlServiceProvider) *securityprotocol.SessionCache {
+	return &samlServiceProvider.sessionCache
 }
 
 func createSamlServiceProvider(config *SamlServiceProviderConfig) (*saml2.SAMLServiceProvider, error) {

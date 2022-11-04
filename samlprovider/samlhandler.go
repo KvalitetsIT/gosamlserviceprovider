@@ -203,8 +203,8 @@ func (handler *SamlHandler) handleSamlLoginResponse(w http.ResponseWriter, r *ht
 		handler.Logger.Warnf("Error parsing form data: %v", err)
 		return http.StatusBadRequest, nil
 	}
-
 	samlResponse := r.FormValue("SAMLResponse")
+
 	assertionInfo, err := handler.provider.SamlServiceProvider.RetrieveAssertionInfo(samlResponse)
 	if err != nil {
 		handler.Logger.Warnf("Invalid assertions: %v", err)
