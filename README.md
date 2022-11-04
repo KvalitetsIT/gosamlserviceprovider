@@ -43,3 +43,5 @@ SAML_LOGOUT_PATH | The path where SAML logout is initiated | /saml/logout |
 SAML_SLO_PATH | The path where the IDP should sent LogoutResponse | /saml/SLO | 
 SAML_BACKEND_HOST | The hostname for the backend service| - |
 SAML_BACKEND_PORT | The portname for the backend service | - | 
+
+Some changes.
