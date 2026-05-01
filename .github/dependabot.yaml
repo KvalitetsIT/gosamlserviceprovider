@@ -1,9 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"    
-    # Wait 5 days before updating to help circumvent supply chain attacks
+    # Wait 14 days before updating to help circumvent supply chain attacks
     cooldown:
-      default-days: 5
+      default-days: 14
     directory: "/"
     schedule:
       interval: weekly
