@@ -36,7 +36,7 @@ jobs:
         run: docker build -t kvalitetsit/caddysamlprovider --network gosamlserviceprovider .
 
       - name: Create Release Notes
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3.0.1
         if: ${{ steps.tag.conclusion != 'skipped' }}
         with:
           generate_release_notes: true
